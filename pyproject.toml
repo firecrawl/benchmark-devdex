@@ -1,0 +1,36 @@
+[project]
+name = "devdex"
+version = "1.0.0"
+description = "DevDex — a benchmark for developer search: repo discovery, docs lookup, issue/PR resolution"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+
+# ONLY WHAT THIS TREE IMPORTS. Verified by AST-walking every .py here: the only third-party
+# imports are anyio, claude_agent_sdk, numpy and pytest. Declaring more would make a clean
+# install slower and more fragile for no benefit.
+#
+# NOTE: no vendor SDK appears here on purpose. Every engine is reached over its own MCP server via
+# plain HTTP, so adding an arm needs a URL and a tool name -- not a dependency.
+dependencies = [
+    "claude-agent-sdk",   # the agent loop every arm is driven through
+    "anyio",              # the SDK's async transport
+    "numpy",              # bootstrap CIs in benchmark/run_benchmark.py's report()
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+devdex = "devdex.run_eval:main"
+devdex-report = "devdex.scorer.report_metrics:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["devdex"]
+
+[tool.pytest.ini_options]
+testpaths = ["devdex/tests"]

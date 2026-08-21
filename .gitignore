@@ -1,0 +1,29 @@
+# Secrets. .env.example is the template and IS tracked; .env never is.
+.env
+.env.*
+!.env.example
+
+# Run output. Records are large (the internal sweep is ~900MB) and are the
+# artifact of YOUR run, not of the repo. `--auto-resume` reads them from here,
+# so keep them locally — just don't commit them.
+devdex/runs/
+
+# Held-back ground truth. Only the public sample ships; the full sets are
+# excluded so the memorisation gate keeps working. Belt and braces in case a
+# full set is copied in locally to re-run the dataset tests against it.
+devdex/gt/repo_v*.jsonl
+devdex/gt/docs_v*.jsonl
+devdex/gt/fix_short_v*.jsonl
+devdex/gt/_work/
+
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+env/
+venv/
+.venv/
+
+.DS_Store
+.idea/
+.vscode/

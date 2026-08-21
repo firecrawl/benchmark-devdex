@@ -1,0 +1,551 @@
+{
+  "benchmark": "DevDex",
+  "version": "1.0.0",
+  "tracks": {
+    "repo": {
+      "n": 393,
+      "gt": "repo_v2.0.0"
+    },
+    "issue_pr": {
+      "n": 400,
+      "gt": "fix_short_v1.0.0"
+    },
+    "docs": {
+      "n": 386,
+      "gt": "docs_v5.0.0"
+    }
+  },
+  "driver": "claude-opus-4-8",
+  "passes": 1,
+  "depth_cap": 10,
+  "memory_floor": {
+    "repo": 0.005,
+    "issue_pr": 0.0,
+    "docs": 0.034
+  },
+  "note": "Scores are on the FULL sets (n above). devdex/gt/ ships a stratified ~50% public sample (594 items).",
+  "systems": {
+    "Firecrawl Developer Index": {
+      "arm_id": "fc-mcp",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.761,
+          "recall@10_ci": [
+            0.718,
+            0.802
+          ],
+          "MRR@10": 0.755,
+          "MRR@10_ci": [
+            0.712,
+            0.794
+          ],
+          "scored": 393,
+          "dead_frac": 0.0
+        },
+        "fix": {
+          "recall@10": 0.66,
+          "recall@10_ci": [
+            0.616,
+            0.705
+          ],
+          "MRR@10": 0.633,
+          "MRR@10_ci": [
+            0.588,
+            0.677
+          ],
+          "scored": 400,
+          "dead_frac": 0.02
+        },
+        "docs": {
+          "recall@10": 0.472,
+          "recall@10_ci": [
+            0.427,
+            0.521
+          ],
+          "MRR@10": 0.401,
+          "MRR@10_ci": [
+            0.359,
+            0.446
+          ],
+          "scored": 386,
+          "dead_frac": 0.005
+        }
+      },
+      "combined": {
+        "recall@10": 0.631,
+        "recall@10_ci": [
+          0.605,
+          0.657
+        ],
+        "MRR@10": 0.596,
+        "MRR@10_ci": [
+          0.571,
+          0.622
+        ]
+      }
+    },
+    "Firecrawl Search (no category)": {
+      "arm_id": "fc-web",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.776,
+          "recall@10_ci": [
+            0.735,
+            0.817
+          ],
+          "MRR@10": 0.76,
+          "MRR@10_ci": [
+            0.72,
+            0.802
+          ],
+          "scored": 393,
+          "dead_frac": 0.0
+        },
+        "fix": {
+          "recall@10": 0.565,
+          "recall@10_ci": [
+            0.517,
+            0.613
+          ],
+          "MRR@10": 0.557,
+          "MRR@10_ci": [
+            0.511,
+            0.605
+          ],
+          "scored": 400,
+          "dead_frac": 0.028
+        },
+        "docs": {
+          "recall@10": 0.386,
+          "recall@10_ci": [
+            0.339,
+            0.435
+          ],
+          "MRR@10": 0.33,
+          "MRR@10_ci": [
+            0.287,
+            0.374
+          ],
+          "scored": 386,
+          "dead_frac": 0.003
+        }
+      },
+      "combined": {
+        "recall@10": 0.576,
+        "recall@10_ci": [
+          0.548,
+          0.603
+        ],
+        "MRR@10": 0.549,
+        "MRR@10_ci": [
+          0.522,
+          0.575
+        ]
+      }
+    },
+    "Parallel": {
+      "arm_id": "parallel-mcp",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.819,
+          "recall@10_ci": [
+            0.779,
+            0.855
+          ],
+          "MRR@10": 0.798,
+          "MRR@10_ci": [
+            0.758,
+            0.835
+          ],
+          "scored": 393,
+          "dead_frac": 0.003
+        },
+        "fix": {
+          "recall@10": 0.629,
+          "recall@10_ci": [
+            0.583,
+            0.674
+          ],
+          "MRR@10": 0.624,
+          "MRR@10_ci": [
+            0.578,
+            0.668
+          ],
+          "scored": 400,
+          "dead_frac": 0.007
+        },
+        "docs": {
+          "recall@10": 0.282,
+          "recall@10_ci": [
+            0.238,
+            0.329
+          ],
+          "MRR@10": 0.261,
+          "MRR@10_ci": [
+            0.221,
+            0.305
+          ],
+          "scored": 386,
+          "dead_frac": 0.026
+        }
+      },
+      "combined": {
+        "recall@10": 0.577,
+        "recall@10_ci": [
+          0.553,
+          0.602
+        ],
+        "MRR@10": 0.561,
+        "MRR@10_ci": [
+          0.538,
+          0.585
+        ]
+      }
+    },
+    "Exa": {
+      "arm_id": "exa-mcp",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.733,
+          "recall@10_ci": [
+            0.687,
+            0.776
+          ],
+          "MRR@10": 0.723,
+          "MRR@10_ci": [
+            0.679,
+            0.767
+          ],
+          "scored": 393,
+          "dead_frac": 0.005
+        },
+        "fix": {
+          "recall@10": 0.585,
+          "recall@10_ci": [
+            0.537,
+            0.631
+          ],
+          "MRR@10": 0.609,
+          "MRR@10_ci": [
+            0.561,
+            0.657
+          ],
+          "scored": 400,
+          "dead_frac": 0.005
+        },
+        "docs": {
+          "recall@10": 0.293,
+          "recall@10_ci": [
+            0.249,
+            0.339
+          ],
+          "MRR@10": 0.282,
+          "MRR@10_ci": [
+            0.239,
+            0.327
+          ],
+          "scored": 386,
+          "dead_frac": 0.005
+        }
+      },
+      "combined": {
+        "recall@10": 0.537,
+        "recall@10_ci": [
+          0.511,
+          0.563
+        ],
+        "MRR@10": 0.538,
+        "MRR@10_ci": [
+          0.512,
+          0.564
+        ]
+      }
+    },
+    "Mintlify Index": {
+      "arm_id": "mintlify",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.743,
+          "recall@10_ci": [
+            0.7,
+            0.786
+          ],
+          "MRR@10": 0.733,
+          "MRR@10_ci": [
+            0.691,
+            0.777
+          ],
+          "scored": 393,
+          "dead_frac": 0.061
+        },
+        "fix": {
+          "recall@10": 0.56,
+          "recall@10_ci": [
+            0.512,
+            0.605
+          ],
+          "MRR@10": 0.581,
+          "MRR@10_ci": [
+            0.533,
+            0.626
+          ],
+          "scored": 400,
+          "dead_frac": 0.013
+        },
+        "docs": {
+          "recall@10": 0.334,
+          "recall@10_ci": [
+            0.288,
+            0.381
+          ],
+          "MRR@10": 0.301,
+          "MRR@10_ci": [
+            0.257,
+            0.343
+          ],
+          "scored": 386,
+          "dead_frac": 0.028
+        }
+      },
+      "combined": {
+        "recall@10": 0.546,
+        "recall@10_ci": [
+          0.52,
+          0.572
+        ],
+        "MRR@10": 0.538,
+        "MRR@10_ci": [
+          0.512,
+          0.565
+        ]
+      }
+    },
+    "Context7": {
+      "arm_id": "context7",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.008,
+          "recall@10_ci": [
+            0.0,
+            0.018
+          ],
+          "MRR@10": 0.008,
+          "MRR@10_ci": [
+            0.0,
+            0.018
+          ],
+          "scored": 393,
+          "dead_frac": 0.712,
+          "status": "fails_dead_run_bar",
+          "note": "out-of-domain: Context7 indexes library documentation, not repositories"
+        },
+        "fix": {
+          "recall@10": 0.029,
+          "recall@10_ci": [
+            0.014,
+            0.045
+          ],
+          "MRR@10": 0.031,
+          "MRR@10_ci": [
+            0.015,
+            0.048
+          ],
+          "scored": 400,
+          "dead_frac": 0.52,
+          "status": "fails_dead_run_bar",
+          "note": "out-of-domain: Context7 indexes library documentation, not issue threads"
+        },
+        "docs": {
+          "recall@10": 0.466,
+          "recall@10_ci": [
+            0.417,
+            0.516
+          ],
+          "MRR@10": 0.395,
+          "MRR@10_ci": [
+            0.35,
+            0.442
+          ],
+          "scored": 386,
+          "dead_frac": 0.01
+        }
+      },
+      "combined": {
+        "recall@10": 0.168,
+        "recall@10_ci": [
+          0.151,
+          0.185
+        ],
+        "MRR@10": 0.145,
+        "MRR@10_ci": [
+          0.13,
+          0.161
+        ],
+        "status": "partially_unreliable",
+        "note": "equal-weight mean including out-of-bar cell(s): repo, fix \u2014 read as coverage across three tracks, not retrieval quality"
+      }
+    },
+    "Claude native web search": {
+      "arm_id": "websearch",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.807,
+          "recall@10_ci": [
+            0.768,
+            0.845
+          ],
+          "MRR@10": 0.794,
+          "MRR@10_ci": [
+            0.755,
+            0.833
+          ],
+          "scored": 393,
+          "dead_frac": 0.003
+        },
+        "fix": {
+          "recall@10": 0.275,
+          "recall@10_ci": [
+            0.235,
+            0.315
+          ],
+          "MRR@10": 0.329,
+          "MRR@10_ci": [
+            0.283,
+            0.375
+          ],
+          "scored": 400,
+          "dead_frac": 0.0
+        },
+        "docs": {
+          "recall@10": 0.28,
+          "recall@10_ci": [
+            0.238,
+            0.326
+          ],
+          "MRR@10": 0.251,
+          "MRR@10_ci": [
+            0.212,
+            0.294
+          ],
+          "scored": 386,
+          "dead_frac": 0.0
+        }
+      },
+      "combined": {
+        "recall@10": 0.454,
+        "recall@10_ci": [
+          0.43,
+          0.477
+        ],
+        "MRR@10": 0.458,
+        "MRR@10_ci": [
+          0.435,
+          0.483
+        ]
+      }
+    },
+    "GitHub CLI": {
+      "arm_id": "gh-hybrid",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.234,
+          "recall@10_ci": [
+            0.193,
+            0.275
+          ],
+          "MRR@10": 0.232,
+          "MRR@10_ci": [
+            0.191,
+            0.272
+          ],
+          "scored": 393,
+          "dead_frac": 0.079
+        },
+        "fix": {
+          "recall@10": 0.469,
+          "recall@10_ci": [
+            0.425,
+            0.511
+          ],
+          "MRR@10": 0.56,
+          "MRR@10_ci": [
+            0.513,
+            0.61
+          ],
+          "scored": 400,
+          "dead_frac": 0.045
+        },
+        "docs": {
+          "status": "not_run",
+          "note": "never measured on this track \u2014 absent, not zero"
+        }
+      }
+    },
+    "No tools (control)": {
+      "arm_id": "no-tool",
+      "tracks": {
+        "repo": {
+          "recall@10": 0.005,
+          "recall@10_ci": [
+            0.0,
+            0.013
+          ],
+          "MRR@10": 0.001,
+          "MRR@10_ci": [
+            0.0,
+            0.001
+          ],
+          "scored": 393,
+          "dead_frac": 0.003
+        },
+        "fix": {
+          "recall@10": 0.0,
+          "recall@10_ci": [
+            0.0,
+            0.0
+          ],
+          "MRR@10": 0.0,
+          "MRR@10_ci": [
+            0.0,
+            0.0
+          ],
+          "scored": 400,
+          "dead_frac": 0.0
+        },
+        "docs": {
+          "recall@10": 0.034,
+          "recall@10_ci": [
+            0.018,
+            0.052
+          ],
+          "MRR@10": 0.027,
+          "MRR@10_ci": [
+            0.014,
+            0.043
+          ],
+          "scored": 386,
+          "dead_frac": 0.0
+        }
+      },
+      "combined": {
+        "recall@10": 0.013,
+        "recall@10_ci": [
+          0.007,
+          0.02
+        ],
+        "MRR@10": 0.009,
+        "MRR@10_ci": [
+          0.005,
+          0.015
+        ]
+      }
+    }
+  },
+  "ci": {
+    "method": "percentile bootstrap",
+    "resamples": 2000,
+    "level": 0.95,
+    "combined": "stratified within each track: resample every track independently at fixed n, average the three per-resample track means"
+  },
+  "aggregation": "combined = equal-weight mean of the three track means (macro, not item-weighted)"
+}

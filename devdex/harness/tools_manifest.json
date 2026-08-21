@@ -1,0 +1,2325 @@
+{
+ "mcp__c7__query-docs": {
+  "description": "Retrieves and queries up-to-date documentation and code examples from Context7 for any programming library or framework.\n\nYou must call 'Resolve Context7 Library ID' tool first to obtain the exact Context7-compatible library ID required to use this tool, UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.\n\nDo not call this tool more than 3 times per question.",
+  "input_schema": {
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "properties": {
+    "libraryId": {
+     "description": "Exact Context7-compatible library ID (e.g., '/mongodb/docs', '/vercel/next.js', '/supabase/supabase', '/vercel/next.js/v14.3.0-canary.87') retrieved from 'resolve-library-id' or directly from user query in the format '/org/project' or '/org/project/version'.",
+     "type": "string"
+    },
+    "query": {
+     "description": "What to look up in the library's documentation, scoped to a single concept. Be specific and include relevant details, but keep each query to one topic \u2014 if the user's question spans multiple distinct concepts, make a separate call per concept instead of combining them, unless the question is about how the concepts interact. Good: 'How to set up authentication with JWT in Express.js' or 'React useEffect cleanup function examples'. Bad (too vague): 'auth' or 'hooks'. Bad (too broad): 'routing and auth and caching in Next.js'. The query is sent to the Context7 API for processing. Do not include any sensitive or confidential information such as API keys, passwords, credentials, personal data, or proprietary code in your query.",
+     "type": "string"
+    }
+   },
+   "required": [
+    "libraryId",
+    "query"
+   ],
+   "type": "object"
+  },
+  "server": "c7",
+  "tool": "query-docs"
+ },
+ "mcp__c7__resolve-library-id": {
+  "description": "Resolves a package/product name to a Context7-compatible library ID and returns matching libraries.\n\nYou MUST call this function before 'Query Documentation' tool to obtain a valid Context7-compatible library ID UNLESS the user explicitly provides a library ID in the format '/org/project' or '/org/project/version' in their query.\n\nEach result includes:\n- Library ID: Context7-compatible identifier (format: /org/project)\n- Name: Library or package name\n- Description: Short summary\n- Code Snippets: Number of available code examples\n- Source Reputation: Authority indicator (High, Medium, Low, or Unknown)\n- Benchmark Score: Quality indicator (100 is the highest score)\n- Versions: List of versions if available. Use one of those versions if the user provides a version in their query. The format of the version is /org/project/version.\n\nFor best results, select libraries based on name match, source reputation, snippet coverage, benchmark score, and relevance to your use case.\n\nSelection Process:\n1. Analyze the query to understand what library/package the user is looking for\n2. Return the most relevant match based on:\n- Name similarity to the query (exact matches prioritized)\n- Description relevance to the query's intent\n- Documentation coverage (prioritize libraries with higher Code Snippet counts)\n- Source reputation (consider libraries with High or Medium reputation more authoritative)\n- Benchmark Score: Quality indicator (100 is the highest score)\n\nResponse Format:\n- Return the selected library ID in a clearly marked section\n- Provide a brief explanation for why this library was chosen\n- If multiple good matches exist, acknowledge this but proceed with the most relevant one\n- If no good matches exist, clearly state this and suggest query refinements\n\nFor ambiguous queries, request clarification before proceeding with a best-guess match.\n\nIMPORTANT: Do not call this tool more than 3 times per question. If you cannot find what you need after 3 calls, use the best result you have.",
+  "input_schema": {
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "properties": {
+    "libraryName": {
+     "description": "Library name to search for and retrieve a Context7-compatible library ID. Use the official library name with proper punctuation \u2014 e.g., 'Next.js' instead of 'nextjs', 'Customer.io' instead of 'customerio', 'Three.js' instead of 'threejs'.",
+     "type": "string"
+    },
+    "query": {
+     "description": "What to look up in the library's documentation. This is used to rank library results by relevance to what the user is trying to accomplish. The query is sent to the Context7 API for processing. Do not include any sensitive or confidential information such as API keys, passwords, credentials, personal data, or proprietary code in your query.",
+     "type": "string"
+    }
+   },
+   "required": [
+    "query",
+    "libraryName"
+   ],
+   "type": "object"
+  },
+  "server": "c7",
+  "tool": "resolve-library-id"
+ },
+ "mcp__exa__web_fetch_exa": {
+  "description": "Read a webpage's full content as clean markdown. Use after web_search_exa when highlights are insufficient or to read any URL.\n\nBest for: Extracting full content from known URLs. Batch multiple URLs in one call.\nReturns: Clean text content and metadata from the page(s).",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "maxCharacters": {
+     "description": "Maximum characters to extract per page (default: 3000)",
+     "minimum": 1,
+     "type": "number"
+    },
+    "urls": {
+     "description": "URLs to read. Batch multiple URLs in one call.",
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "required": [
+    "urls"
+   ],
+   "type": "object"
+  },
+  "server": "exa",
+  "tool": "web_fetch_exa"
+ },
+ "mcp__exa__web_search_advanced_exa": {
+  "description": "Advanced web search with full control over filters, domains, dates, and content options.\n\nBest for: When you need specific filters like date ranges, domain restrictions, or category filters.\nNot recommended for: Simple searches - use web_search_exa instead.\nReturns: Search results with optional highlights, summaries, and subpage content.",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "additionalQueries": {
+     "description": "Additional query variations to expand search coverage",
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "category": {
+     "description": "Filter results to a specific category",
+     "enum": [
+      "company",
+      "publication",
+      "news",
+      "pdf",
+      "github",
+      "personal site",
+      "people",
+      "financial report"
+     ],
+     "type": "string"
+    },
+    "contextMaxCharacters": {
+     "description": "Max characters for context string (not included by default)",
+     "minimum": 1,
+     "type": "number"
+    },
+    "enableHighlights": {
+     "description": "Enable highlights extraction",
+     "type": "boolean"
+    },
+    "enableSummary": {
+     "description": "Enable summary generation for results",
+     "type": "boolean"
+    },
+    "endCrawlDate": {
+     "description": "Only include results crawled before this date (ISO 8601: YYYY-MM-DD)",
+     "type": "string"
+    },
+    "endPublishedDate": {
+     "description": "Only include results published before this date (ISO 8601: YYYY-MM-DD)",
+     "type": "string"
+    },
+    "excludeDomains": {
+     "description": "Exclude results from these domains",
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "excludeText": {
+     "description": "Exclude results containing ANY of these text strings",
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "highlightsMaxCharacters": {
+     "description": "Maximum total characters across all highlights per URL. Preferred over highlightsNumSentences.",
+     "type": "number"
+    },
+    "highlightsNumSentences": {
+     "description": "Deprecated: mapped to ~1333 chars/sentence. Use highlightsMaxCharacters instead.",
+     "type": "number"
+    },
+    "highlightsPerUrl": {
+     "description": "Deprecated: currently ignored server-side. Use highlightsMaxCharacters instead.",
+     "type": "number"
+    },
+    "highlightsQuery": {
+     "description": "Query for highlight relevance",
+     "type": "string"
+    },
+    "includeDomains": {
+     "description": "Only include results from these domains (e.g., ['arxiv.org', 'github.com'])",
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "includeText": {
+     "description": "Only include results containing ALL of these text strings",
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "livecrawlTimeout": {
+     "description": "Timeout in milliseconds for fetching fresh content when maxAgeHours triggers a live fetch",
+     "type": "number"
+    },
+    "maxAgeHours": {
+     "description": "Maximum age of cached content in hours. 0 = always fetch fresh content, omit = use cached content with fresh fetch fallback",
+     "type": "number"
+    },
+    "moderation": {
+     "description": "Filter out unsafe/inappropriate content",
+     "type": "boolean"
+    },
+    "numResults": {
+     "description": "Number of results (1-100, default: 10)",
+     "type": "number"
+    },
+    "query": {
+     "description": "Search query - can be a question, statement, or keywords",
+     "minLength": 1,
+     "type": "string"
+    },
+    "startCrawlDate": {
+     "description": "Only include results crawled after this date (ISO 8601: YYYY-MM-DD)",
+     "type": "string"
+    },
+    "startPublishedDate": {
+     "description": "Only include results published after this date (ISO 8601: YYYY-MM-DD)",
+     "type": "string"
+    },
+    "subpageTarget": {
+     "description": "Keywords to target when selecting subpages",
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "subpages": {
+     "description": "Number of subpages to crawl from each result (1-10)",
+     "type": "number"
+    },
+    "summaryQuery": {
+     "description": "Focus query for summary generation",
+     "type": "string"
+    },
+    "textMaxCharacters": {
+     "description": "Max characters for text extraction per result",
+     "minimum": 1,
+     "type": "number"
+    },
+    "type": {
+     "description": "Search type - 'auto': high quality and works with all filters (recommended), 'fast': quick results, 'instant': fastest results",
+     "enum": [
+      "auto",
+      "fast",
+      "instant"
+     ],
+     "type": "string"
+    },
+    "userLocation": {
+     "description": "ISO country code for geo-targeted results (e.g., 'US', 'GB', 'DE')",
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "server": "exa",
+  "tool": "web_search_advanced_exa"
+ },
+ "mcp__exa__web_search_exa": {
+  "description": "Search the web for any topic and get clean, ready-to-use content.\n\n      Best for: Finding current information, news, facts, people, companies, or answering questions about any topic.\n      Returns: Clean text content from top search results.\n\n      Query tips:\n      describe the ideal page, not keywords. \"blog post comparing React and Vue performance\" not \"React vs Vue\".\n      Use category:people / category:company to search through Linkedin profiles / companies respectively.\n      If highlights are insufficient, follow up with web_fetch_exa on the best URLs.",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "numResults": {
+     "description": "Number of search results to return (default: 10).",
+     "type": "number"
+    },
+    "query": {
+     "description": "Natural language search query. Should be a semantically rich description of the ideal page, not just keywords. Optionally include category:<type> (company, people) to focus results \u2014 e.g. 'category:people John Doe software engineer'.",
+     "minLength": 1,
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "server": "exa",
+  "tool": "web_search_exa"
+ },
+ "mcp__fc__firecrawl_agent": {
+  "description": "\nStart an asynchronous web research job from a prompt, optional seed URLs, and an optional JSON schema. Use this for a requested synthesis across multiple sources when the task can wait for asynchronous completion. The agent can search, navigate, read pages, and assemble a structured result.\n\nThis call returns only a job ID, not the research result. Read the job with `firecrawl_agent_status` until it reaches `completed` or `failed`; research commonly takes several minutes. If the job cannot finish within the task's available time, `firecrawl_search` and `firecrawl_scrape` can gather evidence synchronously.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "prompt": {
+     "maxLength": 10000,
+     "minLength": 1,
+     "type": "string"
+    },
+    "schema": {
+     "additionalProperties": false,
+     "propertyNames": {
+      "type": "string"
+     },
+     "type": "object"
+    },
+    "urls": {
+     "items": {
+      "format": "uri",
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "required": [
+    "prompt"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_agent"
+ },
+ "mcp__fc__firecrawl_agent_status": {
+  "description": "\nRetrieve progress or final results for a `firecrawl_agent` job ID. A `processing` response is non-terminal and does not contain the final research result. Check again after 15\u201330 seconds until the status is `completed` or `failed`; complex jobs can take several minutes. If the job cannot finish within the task's available time, use `firecrawl_search` and `firecrawl_scrape` to complete the requested output.\n\nReturns job status, progress information, and result data when completed.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_agent_status"
+ },
+ "mcp__fc__firecrawl_check_crawl_status": {
+  "description": "\nRetrieve the current status, progress, and available results for an existing crawl ID. This only reads Firecrawl job state and does not start or modify the crawl.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_check_crawl_status"
+ },
+ "mcp__fc__firecrawl_crawl": {
+  "description": "\nStart a multi-page crawl at a website URL, poll it to a terminal state, and return the final status and collected data. Scope can be bounded with include/exclude paths, depth, page limit, subdomain/external-link controls, sitemap handling, delay, and scrape options.\n\nCrawl results can be large; use conservative limits when full-site coverage is unnecessary. Webhooks and interactive scrape actions are unavailable in safe mode. Returns the crawl ID, status, and page data.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "allowExternalLinks": {
+     "type": "boolean"
+    },
+    "allowSubdomains": {
+     "type": "boolean"
+    },
+    "crawlEntireDomain": {
+     "type": "boolean"
+    },
+    "deduplicateSimilarURLs": {
+     "type": "boolean"
+    },
+    "delay": {
+     "type": "number"
+    },
+    "excludePaths": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "ignoreQueryParameters": {
+     "type": "boolean"
+    },
+    "includePaths": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "limit": {
+     "type": "number"
+    },
+    "maxConcurrency": {
+     "type": "number"
+    },
+    "maxDiscoveryDepth": {
+     "type": "number"
+    },
+    "prompt": {
+     "type": "string"
+    },
+    "scrapeOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "excludeTags": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "formats": {
+       "items": {
+        "enum": [
+         "markdown",
+         "html",
+         "rawHtml",
+         "screenshot",
+         "links",
+         "summary",
+         "changeTracking",
+         "branding",
+         "json",
+         "query",
+         "audio"
+        ],
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "includeTags": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "jsonOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "prompt": {
+         "type": "string"
+        },
+        "schema": {
+         "additionalProperties": false,
+         "propertyNames": {
+          "type": "string"
+         },
+         "type": "object"
+        }
+       },
+       "type": "object"
+      },
+      "location": {
+       "additionalProperties": false,
+       "properties": {
+        "country": {
+         "type": "string"
+        },
+        "languages": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        }
+       },
+       "type": "object"
+      },
+      "lockdown": {
+       "type": "boolean"
+      },
+      "maxAge": {
+       "type": "number"
+      },
+      "mobile": {
+       "type": "boolean"
+      },
+      "onlyMainContent": {
+       "type": "boolean"
+      },
+      "parsers": {
+       "items": {
+        "enum": [
+         "pdf"
+        ],
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "pdfOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "maxPages": {
+         "maximum": 10000,
+         "minimum": 1,
+         "type": "integer"
+        }
+       },
+       "type": "object"
+      },
+      "profile": {
+       "additionalProperties": false,
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "saveChanges": {
+         "type": "boolean"
+        }
+       },
+       "required": [
+        "name"
+       ],
+       "type": "object"
+      },
+      "proxy": {
+       "enum": [
+        "basic",
+        "stealth",
+        "enhanced",
+        "auto"
+       ],
+       "type": "string"
+      },
+      "queryOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "mode": {
+         "default": "freeform",
+         "enum": [
+          "directQuote",
+          "freeform"
+         ],
+         "type": "string"
+        },
+        "prompt": {
+         "maxLength": 10000,
+         "type": "string"
+        }
+       },
+       "required": [
+        "prompt",
+        "mode"
+       ],
+       "type": "object"
+      },
+      "redactPII": {
+       "type": "boolean"
+      },
+      "removeBase64Images": {
+       "type": "boolean"
+      },
+      "screenshotOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "fullPage": {
+         "type": "boolean"
+        },
+        "quality": {
+         "type": "number"
+        },
+        "viewport": {
+         "additionalProperties": false,
+         "properties": {
+          "height": {
+           "type": "number"
+          },
+          "width": {
+           "type": "number"
+          }
+         },
+         "required": [
+          "width",
+          "height"
+         ],
+         "type": "object"
+        }
+       },
+       "type": "object"
+      },
+      "skipTlsVerification": {
+       "type": "boolean"
+      },
+      "storeInCache": {
+       "type": "boolean"
+      },
+      "waitFor": {
+       "type": "number"
+      },
+      "zeroDataRetention": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "sitemap": {
+     "enum": [
+      "skip",
+      "include",
+      "only"
+     ],
+     "type": "string"
+    },
+    "url": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "url"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_crawl"
+ },
+ "mcp__fc__firecrawl_developer_search": {
+  "description": "\nFor a developer question \u2014 code behaviour, a library or framework, an API contract, an error message, or a known bug \u2014 search an index built for coding agents. The index covers GitHub issues, merged pull requests, repository READMEs, and curated documentation sites. Set skills to \"only\" to limit the search to agent-skill files.\n\nReturns ranked results with an ID, source type, URL, title, and the matched passages in markdown.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "k": {
+     "maximum": 100,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "query": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "skills": {
+     "enum": [
+      "only"
+     ],
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_developer_search"
+ },
+ "mcp__fc__firecrawl_feedback": {
+  "description": "\nSubmit concise quality feedback for a completed search, scrape, parse, or map job. Provide the endpoint, job ID, rating, and relevant issue codes or small contextual fields; omit large page contents and raw outputs.\n\nReturns submission status, feedback ID, and accounting fields.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "endpoint": {
+     "enum": [
+      "search",
+      "scrape",
+      "parse",
+      "map"
+     ],
+     "type": "string"
+    },
+    "issues": {
+     "items": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "type": "string"
+     },
+     "maxItems": 20,
+     "type": "array"
+    },
+    "jobId": {
+     "format": "uuid",
+     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+     "type": "string"
+    },
+    "metadata": {
+     "additionalProperties": false,
+     "propertyNames": {
+      "type": "string"
+     },
+     "type": "object"
+    },
+    "missingContent": {
+     "items": {
+      "additionalProperties": false,
+      "properties": {
+       "description": {
+        "maxLength": 2000,
+        "type": "string"
+       },
+       "topic": {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+       }
+      },
+      "required": [
+       "topic"
+      ],
+      "type": "object"
+     },
+     "maxItems": 50,
+     "type": "array"
+    },
+    "note": {
+     "maxLength": 4000,
+     "type": "string"
+    },
+    "pageNumbers": {
+     "items": {
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991,
+      "type": "integer"
+     },
+     "maxItems": 100,
+     "type": "array"
+    },
+    "querySuggestions": {
+     "maxLength": 2000,
+     "type": "string"
+    },
+    "rating": {
+     "enum": [
+      "good",
+      "bad",
+      "partial"
+     ],
+     "type": "string"
+    },
+    "tags": {
+     "items": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "type": "string"
+     },
+     "maxItems": 20,
+     "type": "array"
+    },
+    "url": {
+     "format": "uri",
+     "type": "string"
+    },
+    "valuableSources": {
+     "items": {
+      "additionalProperties": false,
+      "properties": {
+       "reason": {
+        "maxLength": 1000,
+        "type": "string"
+       },
+       "url": {
+        "format": "uri",
+        "type": "string"
+       }
+      },
+      "required": [
+       "url"
+      ],
+      "type": "object"
+     },
+     "maxItems": 50,
+     "type": "array"
+    }
+   },
+   "required": [
+    "endpoint",
+    "jobId",
+    "rating"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_feedback"
+ },
+ "mcp__fc__firecrawl_interact": {
+  "description": "\nOpen or reuse a live browser session to navigate a page, click controls, fill fields, or run browser code. Provide either `url` or `scrapeId`, and either a natural-language `prompt` or executable `code`; code can run as Bash, Python, or Node with a bounded timeout.\n\nThis acts on the live site, so actions such as form submission can create persistent external side effects. Returns execution output, stdout/stderr, exit status, and session viewing URLs.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "code": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "language": {
+     "enum": [
+      "bash",
+      "python",
+      "node"
+     ],
+     "type": "string"
+    },
+    "prompt": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "scrapeId": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "scrapeOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "excludeTags": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "formats": {
+       "items": {
+        "enum": [
+         "markdown",
+         "html",
+         "rawHtml",
+         "screenshot",
+         "links",
+         "summary",
+         "changeTracking",
+         "branding",
+         "json",
+         "query",
+         "audio"
+        ],
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "includeTags": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "jsonOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "prompt": {
+         "type": "string"
+        },
+        "schema": {
+         "additionalProperties": false,
+         "propertyNames": {
+          "type": "string"
+         },
+         "type": "object"
+        }
+       },
+       "type": "object"
+      },
+      "location": {
+       "additionalProperties": false,
+       "properties": {
+        "country": {
+         "type": "string"
+        },
+        "languages": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        }
+       },
+       "type": "object"
+      },
+      "lockdown": {
+       "type": "boolean"
+      },
+      "maxAge": {
+       "type": "number"
+      },
+      "mobile": {
+       "type": "boolean"
+      },
+      "onlyMainContent": {
+       "type": "boolean"
+      },
+      "parsers": {
+       "items": {
+        "enum": [
+         "pdf"
+        ],
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "pdfOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "maxPages": {
+         "maximum": 10000,
+         "minimum": 1,
+         "type": "integer"
+        }
+       },
+       "type": "object"
+      },
+      "profile": {
+       "additionalProperties": false,
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "saveChanges": {
+         "type": "boolean"
+        }
+       },
+       "required": [
+        "name"
+       ],
+       "type": "object"
+      },
+      "proxy": {
+       "enum": [
+        "basic",
+        "stealth",
+        "enhanced",
+        "auto"
+       ],
+       "type": "string"
+      },
+      "queryOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "mode": {
+         "default": "freeform",
+         "enum": [
+          "directQuote",
+          "freeform"
+         ],
+         "type": "string"
+        },
+        "prompt": {
+         "maxLength": 10000,
+         "type": "string"
+        }
+       },
+       "required": [
+        "prompt",
+        "mode"
+       ],
+       "type": "object"
+      },
+      "redactPII": {
+       "type": "boolean"
+      },
+      "removeBase64Images": {
+       "type": "boolean"
+      },
+      "screenshotOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "fullPage": {
+         "type": "boolean"
+        },
+        "quality": {
+         "type": "number"
+        },
+        "viewport": {
+         "additionalProperties": false,
+         "properties": {
+          "height": {
+           "type": "number"
+          },
+          "width": {
+           "type": "number"
+          }
+         },
+         "required": [
+          "width",
+          "height"
+         ],
+         "type": "object"
+        }
+       },
+       "type": "object"
+      },
+      "skipTlsVerification": {
+       "type": "boolean"
+      },
+      "storeInCache": {
+       "type": "boolean"
+      },
+      "waitFor": {
+       "type": "number"
+      },
+      "zeroDataRetention": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "timeout": {
+     "maximum": 300,
+     "minimum": 1,
+     "type": "number"
+    },
+    "url": {
+     "format": "uri",
+     "type": "string"
+    }
+   },
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_interact"
+ },
+ "mcp__fc__firecrawl_interact_stop": {
+  "description": "\nStop the live interact session associated with a `scrapeId` and release its resources. Returns a success confirmation.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "scrapeId": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "scrapeId"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_interact_stop"
+ },
+ "mcp__fc__firecrawl_map": {
+  "description": "\nEnumerate URLs indexed under one website through Firecrawl without fetching each page's content. Use this when the request asks for a site's URL inventory, when several relevant pages must be located, or when the desired page URL is unknown. An optional `search` term narrows the URL list, while sitemap, subdomain, query-parameter, and result-limit options control coverage.\n\nReturns matching URLs rather than page bodies. Retrieve one page with `firecrawl_scrape`; collect content across multiple pages with `firecrawl_crawl`.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "ignoreQueryParameters": {
+     "type": "boolean"
+    },
+    "includeSubdomains": {
+     "type": "boolean"
+    },
+    "limit": {
+     "type": "number"
+    },
+    "search": {
+     "type": "string"
+    },
+    "sitemap": {
+     "enum": [
+      "include",
+      "skip",
+      "only"
+     ],
+     "type": "string"
+    },
+    "url": {
+     "format": "uri",
+     "type": "string"
+    }
+   },
+   "required": [
+    "url"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_map"
+ },
+ "mcp__fc__firecrawl_monitor_check": {
+  "description": "\nRetrieve one monitor check and its page-level results, optionally filtered by page status. Pages report `same`, `new`, `changed`, `removed`, or `error`; configured goal judging can add a meaningful-change decision.\n\nMarkdown tracking returns a unified text diff, JSON tracking returns field paths with previous/current values and a current snapshot, and mixed tracking returns both. Returns one page of results plus a `next` URL when more pages exist.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "checkId": {
+     "type": "string"
+    },
+    "id": {
+     "type": "string"
+    },
+    "limit": {
+     "exclusiveMinimum": 0,
+     "maximum": 9007199254740991,
+     "type": "integer"
+    },
+    "pageStatus": {
+     "enum": [
+      "same",
+      "new",
+      "changed",
+      "removed",
+      "error"
+     ],
+     "type": "string"
+    },
+    "skip": {
+     "maximum": 9007199254740991,
+     "minimum": 0,
+     "type": "integer"
+    }
+   },
+   "required": [
+    "id",
+    "checkId"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_monitor_check"
+ },
+ "mcp__fc__firecrawl_monitor_checks": {
+  "description": "\nList historical checks for a monitor, optionally filtered by status and bounded by a result limit. Returns one page of check summaries and pagination metadata.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string"
+    },
+    "limit": {
+     "exclusiveMinimum": 0,
+     "maximum": 9007199254740991,
+     "type": "integer"
+    },
+    "offset": {
+     "maximum": 9007199254740991,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "status": {
+     "enum": [
+      "queued",
+      "running",
+      "completed",
+      "failed",
+      "partial",
+      "skipped_overlap"
+     ],
+     "type": "string"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_monitor_checks"
+ },
+ "mcp__fc__firecrawl_monitor_create": {
+  "description": "\nCreate a recurring scrape, crawl, or search monitor that compares each check with its retained predecessor. The simple form accepts `page`/`pages` or `queries` plus a plain-language `goal`; the advanced `body` form controls targets, schedule, change-tracking formats, judging, retention, webhook, and notifications.\n\nIn the simple form, a `goal` is required. If `queries` contains one or more non-empty values and is supplied with `page`/`pages`, `queries` create the search target and page targets are ignored. A monitor schedules future network checks and can send configured email or webhook notifications. Returns the created monitor.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "body": {
+     "additionalProperties": false,
+     "propertyNames": {
+      "type": "string"
+     },
+     "type": "object"
+    },
+    "email": {
+     "type": "string"
+    },
+    "excludeDomains": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "goal": {
+     "type": "string"
+    },
+    "includeDiffs": {
+     "type": "boolean"
+    },
+    "includeDomains": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "maxResults": {
+     "maximum": 50,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "name": {
+     "type": "string"
+    },
+    "page": {
+     "type": "string"
+    },
+    "pages": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "queries": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "scheduleText": {
+     "type": "string"
+    },
+    "searchWindow": {
+     "enum": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "24h",
+      "7d"
+     ],
+     "type": "string"
+    },
+    "timezone": {
+     "type": "string"
+    },
+    "webhookUrl": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_monitor_create"
+ },
+ "mcp__fc__firecrawl_monitor_delete": {
+  "description": "\nPermanently delete a monitor by ID and stop its future schedule. This operation cannot be undone and returns deletion status.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_monitor_delete"
+ },
+ "mcp__fc__firecrawl_monitor_get": {
+  "description": "\nRetrieve one monitor by ID, including its configuration and current state. This does not run or modify the monitor.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_monitor_get"
+ },
+ "mcp__fc__firecrawl_monitor_list": {
+  "description": "\nList monitors for the authenticated account with optional pagination controls. Returns one page of monitor records and pagination metadata.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "limit": {
+     "exclusiveMinimum": 0,
+     "maximum": 9007199254740991,
+     "type": "integer"
+    },
+    "offset": {
+     "maximum": 9007199254740991,
+     "minimum": 0,
+     "type": "integer"
+    }
+   },
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_monitor_list"
+ },
+ "mcp__fc__firecrawl_monitor_run": {
+  "description": "\nQueue an immediate check for a monitor outside its normal schedule. This starts network work for the monitor's configured targets and returns the queued check.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_monitor_run"
+ },
+ "mcp__fc__firecrawl_monitor_update": {
+  "description": "\nPatch an existing monitor by ID. The body can change its name, active/paused status, schedule, targets, goal, judging, webhook, notifications, or retention; these changes affect future scheduled checks.\n\nReturns the updated monitor.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "body": {
+     "additionalProperties": false,
+     "propertyNames": {
+      "type": "string"
+     },
+     "type": "object"
+    },
+    "id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "body"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_monitor_update"
+ },
+ "mcp__fc__firecrawl_parse": {
+  "description": "\nParse one supported document into markdown, HTML, links, summary, targeted answers, or JSON matching a schema. Supported inputs include common HTML, PDF, Word, RTF, OpenDocument, and spreadsheet files; PDF parsing can be bounded with `pdfOptions.maxPages`.\n\nLocal MCP reads `filePath` from the server filesystem. Hosted MCP uses two calls: first provide `filePath` to receive upload instructions, upload locally, then call again with the returned `uploadRef`; do not send both fields together. Remote web URLs belong in `firecrawl_scrape`.\n\nSet `redactPII` to request redaction of personally identifiable information in the returned content. `zeroDataRetention` requires an eligible authenticated account; omit it for anonymous keyless use. Returns upload instructions for hosted phase one or parsed document content for the final call.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "contentType": {
+     "type": "string"
+    },
+    "declaredSizeBytes": {
+     "exclusiveMinimum": 0,
+     "maximum": 9007199254740991,
+     "type": "integer"
+    },
+    "excludeTags": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "filePath": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "formats": {
+     "items": {
+      "enum": [
+       "markdown",
+       "html",
+       "rawHtml",
+       "links",
+       "summary",
+       "json",
+       "query"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "includeTags": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "jsonOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "prompt": {
+       "type": "string"
+      },
+      "schema": {
+       "additionalProperties": false,
+       "propertyNames": {
+        "type": "string"
+       },
+       "type": "object"
+      }
+     },
+     "type": "object"
+    },
+    "maxAge": {
+     "type": "number"
+    },
+    "onlyMainContent": {
+     "type": "boolean"
+    },
+    "parsers": {
+     "items": {
+      "enum": [
+       "pdf"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "pdfOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "maxPages": {
+       "maximum": 10000,
+       "minimum": 1,
+       "type": "integer"
+      }
+     },
+     "type": "object"
+    },
+    "proxy": {
+     "enum": [
+      "basic",
+      "auto"
+     ],
+     "type": "string"
+    },
+    "queryOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "mode": {
+       "default": "freeform",
+       "enum": [
+        "directQuote",
+        "freeform"
+       ],
+       "type": "string"
+      },
+      "prompt": {
+       "maxLength": 10000,
+       "type": "string"
+      }
+     },
+     "required": [
+      "prompt",
+      "mode"
+     ],
+     "type": "object"
+    },
+    "redactPII": {
+     "type": "boolean"
+    },
+    "removeBase64Images": {
+     "type": "boolean"
+    },
+    "skipTlsVerification": {
+     "type": "boolean"
+    },
+    "storeInCache": {
+     "type": "boolean"
+    },
+    "uploadRef": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "zeroDataRetention": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_parse"
+ },
+ "mcp__fc__firecrawl_research_inspect_paper": {
+  "description": "\nRetrieve canonical metadata for one paper ID, such as an arXiv, PMC, PMID, or DOI identifier. Returns the title, abstract, authors, categories, source IDs, and dates as markdown.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "paperId": {
+     "minLength": 1,
+     "type": "string"
+    }
+   },
+   "required": [
+    "paperId"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_research_inspect_paper"
+ },
+ "mcp__fc__firecrawl_research_read_paper": {
+  "description": "\nRetrieve in-body passages from one paper that are relevant to a specific question. Full text is available only for indexed papers; `k` controls the number of passages.\n\nReturns matching passages or a notice when full text is unavailable.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "k": {
+     "maximum": 50,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "paperId": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "question": {
+     "minLength": 1,
+     "type": "string"
+    }
+   },
+   "required": [
+    "paperId",
+    "question"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_research_read_paper"
+ },
+ "mcp__fc__firecrawl_research_related_papers": {
+  "description": "\nFind citation-graph candidates from one to ten `seed_ids`; the first ID is the primary seed and later IDs are anchors. `mode` defaults to `similar` (co-citation/bibliographic coupling); `citers` returns papers citing a seed and `references` papers cited by a seed. `intent` ranks candidates.\n\nReturns ranked candidates and the evaluated pool size.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "intent": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "k": {
+     "maximum": 500,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "mode": {
+     "enum": [
+      "similar",
+      "citers",
+      "references"
+     ],
+     "type": "string"
+    },
+    "rerank": {
+     "type": "boolean"
+    },
+    "seed_ids": {
+     "items": {
+      "type": "string"
+     },
+     "maxItems": 10,
+     "minItems": 1,
+     "type": "array"
+    }
+   },
+   "required": [
+    "seed_ids",
+    "intent"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_research_related_papers"
+ },
+ "mcp__fc__firecrawl_research_search_github": {
+  "description": "\nSearch indexed public GitHub issue, pull-request, and README content. Returns ranked matches with repository, URL, snippet, and full matched markdown when available.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "k": {
+     "maximum": 100,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "query": {
+     "minLength": 1,
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_research_search_github"
+ },
+ "mcp__fc__firecrawl_research_search_papers": {
+  "description": "\nSearch paper metadata and abstracts with a natural-language query across the indexed corpus, which spans biomedical, life-science, and clinical literature (PubMed, bioRxiv, medRxiv) alongside arXiv and other scientific sources. Optional author, category, and date filters constrain results.\n\nSeveral distinct framings of the same question surface different papers than a single query does.\n\nReturns ranked papers with canonical IDs, titles, authors, and abstracts.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "authors": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "categories": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "from": {
+     "type": "string"
+    },
+    "k": {
+     "maximum": 500,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "query": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "to": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_research_search_papers"
+ },
+ "mcp__fc__firecrawl_scrape": {
+  "description": "\nRetrieve and extract content from one supplied URL through Firecrawl. Use this when the request identifies a page and needs its content or defined fields. It can return markdown, HTML, links, screenshots, branding data, a targeted answer, or JSON matching a supplied schema; JSON is useful when the requested result has defined fields, while markdown preserves readable page content.\n\nThis tool operates on a known page. For a set of pages use `firecrawl_crawl`, and to discover page URLs use `firecrawl_map` or `firecrawl_search`. Options include JavaScript render delay, cache age, main-content filtering, PII redaction, and lockdown cache-only retrieval. Browser actions may change the live page when interactive actions are enabled.\n\nFirecrawl may reuse recently indexed content instead of refetching the page, and the reuse window varies by domain. Set `maxAge: 0` to force a live fetch, or a smaller `maxAge` to bound how stale reused content may be. A successful response does not by itself confirm that the state it describes is still current.\n\nReturns the selected content formats and page metadata.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "excludeTags": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "formats": {
+     "items": {
+      "enum": [
+       "markdown",
+       "html",
+       "rawHtml",
+       "screenshot",
+       "links",
+       "summary",
+       "changeTracking",
+       "branding",
+       "json",
+       "query",
+       "audio"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "includeTags": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "jsonOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "prompt": {
+       "type": "string"
+      },
+      "schema": {
+       "additionalProperties": false,
+       "propertyNames": {
+        "type": "string"
+       },
+       "type": "object"
+      }
+     },
+     "type": "object"
+    },
+    "location": {
+     "additionalProperties": false,
+     "properties": {
+      "country": {
+       "type": "string"
+      },
+      "languages": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      }
+     },
+     "type": "object"
+    },
+    "lockdown": {
+     "type": "boolean"
+    },
+    "maxAge": {
+     "type": "number"
+    },
+    "mobile": {
+     "type": "boolean"
+    },
+    "onlyMainContent": {
+     "type": "boolean"
+    },
+    "parsers": {
+     "items": {
+      "enum": [
+       "pdf"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "pdfOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "maxPages": {
+       "maximum": 10000,
+       "minimum": 1,
+       "type": "integer"
+      }
+     },
+     "type": "object"
+    },
+    "profile": {
+     "additionalProperties": false,
+     "properties": {
+      "name": {
+       "type": "string"
+      },
+      "saveChanges": {
+       "type": "boolean"
+      }
+     },
+     "required": [
+      "name"
+     ],
+     "type": "object"
+    },
+    "proxy": {
+     "enum": [
+      "basic",
+      "stealth",
+      "enhanced",
+      "auto"
+     ],
+     "type": "string"
+    },
+    "queryOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "mode": {
+       "default": "freeform",
+       "enum": [
+        "directQuote",
+        "freeform"
+       ],
+       "type": "string"
+      },
+      "prompt": {
+       "maxLength": 10000,
+       "type": "string"
+      }
+     },
+     "required": [
+      "prompt",
+      "mode"
+     ],
+     "type": "object"
+    },
+    "redactPII": {
+     "type": "boolean"
+    },
+    "removeBase64Images": {
+     "type": "boolean"
+    },
+    "screenshotOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "fullPage": {
+       "type": "boolean"
+      },
+      "quality": {
+       "type": "number"
+      },
+      "viewport": {
+       "additionalProperties": false,
+       "properties": {
+        "height": {
+         "type": "number"
+        },
+        "width": {
+         "type": "number"
+        }
+       },
+       "required": [
+        "width",
+        "height"
+       ],
+       "type": "object"
+      }
+     },
+     "type": "object"
+    },
+    "skipTlsVerification": {
+     "type": "boolean"
+    },
+    "storeInCache": {
+     "type": "boolean"
+    },
+    "url": {
+     "format": "uri",
+     "type": "string"
+    },
+    "waitFor": {
+     "type": "number"
+    },
+    "zeroDataRetention": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "url"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_scrape"
+ },
+ "mcp__fc__firecrawl_search": {
+  "description": "\nSearch web, news, or image sources and return ranked results. Operators include quoted phrases, `-term`, `site:host`, `inurl:term`, `intitle:term`, and `related:host`; the set is non-exhaustive. `includeDomains` and `excludeDomains` are mutually exclusive hostname filters; categories limit results to GitHub, research, PDF, or developer sources.\n\nFor a programming question, add `categories: [\"developer\"]`. It searches an index of GitHub issues, merged pull requests, repository READMEs, and curated documentation sites, and returns the hits in `data.developer` beside the web results.\n\n`categories: [\"research\"]` restricts these web results to research-affiliated websites and returns page snippets. The `firecrawl_research_*` tools are a separate surface that searches paper abstracts and full text across biomedical (PubMed, bioRxiv, medRxiv) and arXiv literature.\n\n`scrapeOptions` can attach extracted page content; pages fetched this way use a fixed reuse window and ignore `maxAge`, so use `firecrawl_scrape` when a live fetch is required. Returns source-type result groups and usage metadata. Authenticated responses can include an `id` for optional search feedback.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "categories": {
+     "items": {
+      "enum": [
+       "github",
+       "research",
+       "pdf",
+       "developer"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "enterprise": {
+     "items": {
+      "enum": [
+       "default",
+       "anon",
+       "zdr"
+      ],
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "excludeDomains": {
+     "items": {
+      "maxLength": 253,
+      "minLength": 1,
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$",
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "filter": {
+     "type": "string"
+    },
+    "highlights": {
+     "type": "boolean"
+    },
+    "includeDomains": {
+     "items": {
+      "maxLength": 253,
+      "minLength": 1,
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$",
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "limit": {
+     "type": "number"
+    },
+    "location": {
+     "type": "string"
+    },
+    "query": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "scrapeOptions": {
+     "additionalProperties": false,
+     "properties": {
+      "excludeTags": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "formats": {
+       "items": {
+        "enum": [
+         "markdown",
+         "html",
+         "rawHtml",
+         "screenshot",
+         "links",
+         "summary",
+         "changeTracking",
+         "branding",
+         "json",
+         "query",
+         "audio"
+        ],
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "includeTags": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "jsonOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "prompt": {
+         "type": "string"
+        },
+        "schema": {
+         "additionalProperties": false,
+         "propertyNames": {
+          "type": "string"
+         },
+         "type": "object"
+        }
+       },
+       "type": "object"
+      },
+      "location": {
+       "additionalProperties": false,
+       "properties": {
+        "country": {
+         "type": "string"
+        },
+        "languages": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        }
+       },
+       "type": "object"
+      },
+      "lockdown": {
+       "type": "boolean"
+      },
+      "maxAge": {
+       "type": "number"
+      },
+      "mobile": {
+       "type": "boolean"
+      },
+      "onlyMainContent": {
+       "type": "boolean"
+      },
+      "parsers": {
+       "items": {
+        "enum": [
+         "pdf"
+        ],
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "pdfOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "maxPages": {
+         "maximum": 10000,
+         "minimum": 1,
+         "type": "integer"
+        }
+       },
+       "type": "object"
+      },
+      "profile": {
+       "additionalProperties": false,
+       "properties": {
+        "name": {
+         "type": "string"
+        },
+        "saveChanges": {
+         "type": "boolean"
+        }
+       },
+       "required": [
+        "name"
+       ],
+       "type": "object"
+      },
+      "proxy": {
+       "enum": [
+        "basic",
+        "stealth",
+        "enhanced",
+        "auto"
+       ],
+       "type": "string"
+      },
+      "queryOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "mode": {
+         "default": "freeform",
+         "enum": [
+          "directQuote",
+          "freeform"
+         ],
+         "type": "string"
+        },
+        "prompt": {
+         "maxLength": 10000,
+         "type": "string"
+        }
+       },
+       "required": [
+        "prompt",
+        "mode"
+       ],
+       "type": "object"
+      },
+      "redactPII": {
+       "type": "boolean"
+      },
+      "removeBase64Images": {
+       "type": "boolean"
+      },
+      "screenshotOptions": {
+       "additionalProperties": false,
+       "properties": {
+        "fullPage": {
+         "type": "boolean"
+        },
+        "quality": {
+         "type": "number"
+        },
+        "viewport": {
+         "additionalProperties": false,
+         "properties": {
+          "height": {
+           "type": "number"
+          },
+          "width": {
+           "type": "number"
+          }
+         },
+         "required": [
+          "width",
+          "height"
+         ],
+         "type": "object"
+        }
+       },
+       "type": "object"
+      },
+      "skipTlsVerification": {
+       "type": "boolean"
+      },
+      "storeInCache": {
+       "type": "boolean"
+      },
+      "waitFor": {
+       "type": "number"
+      },
+      "zeroDataRetention": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "sources": {
+     "items": {
+      "additionalProperties": false,
+      "properties": {
+       "type": {
+        "enum": [
+         "web",
+         "images",
+         "news"
+        ],
+        "type": "string"
+       }
+      },
+      "required": [
+       "type"
+      ],
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "tbs": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_search"
+ },
+ "mcp__fc__firecrawl_search_feedback": {
+  "description": "\nRecords schema-validated quality feedback for a prior `firecrawl_search` UUID `searchId`. A `good` rating requires a valuable source, `partial` a valuable source or at least one `missingContent` entry, and `bad` at least one `missingContent` entry or a query suggestion; caps are 50 `valuableSources` and 20 `missingContent` entries.\n\nEligibility is limited to successful searches within the feedback age window. The record is idempotent per search ID. Eligible first feedback for a search can refund 1 credit; refunds are subject to the team's daily cap. The response reports whether a refund was applied, along with submission and daily-cap status.\n",
+  "input_schema": {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false,
+   "properties": {
+    "missingContent": {
+     "items": {
+      "additionalProperties": false,
+      "properties": {
+       "description": {
+        "maxLength": 2000,
+        "type": "string"
+       },
+       "topic": {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+       }
+      },
+      "required": [
+       "topic"
+      ],
+      "type": "object"
+     },
+     "maxItems": 20,
+     "type": "array"
+    },
+    "querySuggestions": {
+     "maxLength": 2000,
+     "type": "string"
+    },
+    "rating": {
+     "enum": [
+      "good",
+      "bad",
+      "partial"
+     ],
+     "type": "string"
+    },
+    "searchId": {
+     "format": "uuid",
+     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+     "type": "string"
+    },
+    "valuableSources": {
+     "items": {
+      "additionalProperties": false,
+      "properties": {
+       "reason": {
+        "maxLength": 1000,
+        "type": "string"
+       },
+       "url": {
+        "format": "uri",
+        "type": "string"
+       }
+      },
+      "required": [
+       "url"
+      ],
+      "type": "object"
+     },
+     "maxItems": 50,
+     "type": "array"
+    }
+   },
+   "required": [
+    "searchId",
+    "rating"
+   ],
+   "type": "object"
+  },
+  "server": "fc",
+  "tool": "firecrawl_search_feedback"
+ },
+ "mcp__mint__context": {
+  "description": "Research an implementation task and return a compact answer with primary-source citations.",
+  "input_schema": {
+   "additionalProperties": false,
+   "properties": {
+    "excludeDomains": {
+     "items": {
+      "$ref": "#/properties/product"
+     },
+     "minItems": 1,
+     "type": "array"
+    },
+    "includeDomains": {
+     "items": {
+      "$ref": "#/properties/product"
+     },
+     "minItems": 1,
+     "type": "array"
+    },
+    "product": {
+     "description": "Optional product or company name used to focus retrieval.",
+     "minLength": 1,
+     "type": "string"
+    },
+    "query": {
+     "description": "Implementation question to research.",
+     "minLength": 1,
+     "type": "string"
+    },
+    "tokenBudget": {
+     "default": 3000,
+     "description": "Maximum response tokens. Use the 3000 default for focused questions and up to 6000 for complex multi-part implementation tasks.",
+     "exclusiveMinimum": 0,
+     "maximum": 6000,
+     "type": "integer"
+    }
+   },
+   "required": [
+    "query"
+   ],
+   "type": "object"
+  },
+  "server": "mint",
+  "tool": "context"
+ },
+ "mcp__par__web_fetch": {
+  "description": "Purpose: Fetch and extract relevant content\nfrom specific web URLs. Use only when web_search excerpts are insufficient\nfor the task at hand.\n\nIdeal Use Cases:\n- The user asked about a specific URL or page\n- You need exact wording or quotes that excerpts may have truncated\n- You need full-page analysis (long article, document, or page structure)\n- web_search excerpts are conflicting or clearly insufficient to answer\n",
+  "input_schema": {
+   "properties": {
+    "full_content": {
+     "default": false,
+     "description": "Prefer leaving this off. The default\nexcerpt mode returns LLM-optimized snippets focused on your objective \u2014 they\nare much smaller, cheaper, and usually all you need. Only set to true when\nyou explicitly need the entire page as markdown (e.g. reading a long article\nin full, or running a document through a downstream summarizer).\n\nWarning: enabling full content can return a large amount of content \u2014\noften tens of thousands of tokens for a long article. This may exceed your\nMCP client's tool-output limit and will substantially increase response\nsize and latency.",
+     "title": "Full Content",
+     "type": "boolean"
+    },
+    "model_name": {
+     "description": "The identifier of the LLM model making this tool call (e.g. 'claude-opus-4.7', 'gpt-5.5', 'gemini-2.5-pro'). Before the first call, verify the exact active model slug from trusted runtime/session metadata or active client configuration. Pass the full slug verbatim; never shorten or substitute a model-family alias like 'gpt-5'. Used for product analytics only; does not affect search behavior.",
+     "maxLength": 100,
+     "type": "string"
+    },
+    "objective": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Natural-language description of what\ninformation you're looking for from the URLs. Limit to 200 characters.",
+     "title": "Objective"
+    },
+    "search_queries": {
+     "anyOf": [
+      {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "description": "Optional keyword search queries (3-6\nwords each) used together with objective to focus excerpts on the most\nrelevant content. Pass the queries from the prior web_search call that\nsurfaced these URLs, if applicable.",
+     "title": "Search Queries"
+    },
+    "session_id": {
+     "description": "Stable identifier for the current conversation. Generate a random value (UUID or 32+ character hex string) at the start of your session and reuse the exact same value on every web_search / web_fetch call. Do NOT change it between turns. Used for free-tier rate limiting and correlating your tool calls in our logs; ignored on paid-tier keys.",
+     "maxLength": 100,
+     "type": "string"
+    },
+    "urls": {
+     "description": "List of URLs to extract content from. Must be\nvalid HTTP/HTTPS URLs. Up to 20 URLs per request.",
+     "items": {
+      "type": "string"
+     },
+     "title": "Urls",
+     "type": "array"
+    }
+   },
+   "required": [
+    "urls"
+   ],
+   "title": "v1_extract_toolArguments",
+   "type": "object"
+  },
+  "server": "par",
+  "tool": "web_fetch"
+ },
+ "mcp__par__web_search": {
+  "description": "Purpose: Perform web searches and return\nLLM-friendly results, including excerpts that are usually sufficient to\nanswer directly without a follow-up fetch.\n\nIdeal Use Cases:\n- Answering questions that require fresh or current information\n- Research, comparison, documentation, and troubleshooting questions\n- Broad tasks where multiple `search_queries` can be issued in a single call\n",
+  "input_schema": {
+   "properties": {
+    "model_name": {
+     "description": "The identifier of the LLM model making this tool call (e.g. 'claude-opus-4.7', 'gpt-5.5', 'gemini-2.5-pro'). Before the first call, verify the exact active model slug from trusted runtime/session metadata or active client configuration. Pass the full slug verbatim; never shorten or substitute a model-family alias like 'gpt-5'. Used for product analytics only; does not affect search behavior.",
+     "maxLength": 100,
+     "type": "string"
+    },
+    "objective": {
+     "description": "Natural-language description of what the web search is trying to find.\nTry to make the search objective atomic, looking for a specific piece of information. May include guidance about preferred sources or freshness.",
+     "title": "Objective",
+     "type": "string"
+    },
+    "search_queries": {
+     "description": "Concise keyword search queries, 3-6 words\neach, which may include search operators. At least one query is required;\nprovide 2-3 for best results. For broad tasks, you can include multiple\nrelated queries in a single call instead of chaining web_search calls. The\nqueries should be related to the objective.",
+     "items": {
+      "type": "string"
+     },
+     "title": "Search Queries",
+     "type": "array"
+    },
+    "session_id": {
+     "description": "Stable identifier for the current conversation. Generate a random value (UUID or 32+ character hex string) at the start of your session and reuse the exact same value on every web_search / web_fetch call. Do NOT change it between turns. Used for free-tier rate limiting and correlating your tool calls in our logs; ignored on paid-tier keys.",
+     "maxLength": 100,
+     "type": "string"
+    }
+   },
+   "required": [
+    "objective",
+    "search_queries"
+   ],
+   "title": "v1_search_toolArguments",
+   "type": "object"
+  },
+  "server": "par",
+  "tool": "web_search"
+ }
+}

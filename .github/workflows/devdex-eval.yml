@@ -1,0 +1,122 @@
+name: devdex-eval
+
+# Two jobs, deliberately split by what they cost.
+#
+#   checks  runs on every push and PR. No credentials, no network, no model calls: dataset
+#           schema plus scorer arithmetic. This is the gate -- it catches a changed metric
+#           definition or a corrupted ground-truth file before any number is published.
+#
+#   matrix  manual only. A full pass is ~700 items x 9 arms against four paid vendor APIs and
+#           an Opus driver; running it per-push would be both expensive and rate-limited
+#           (Mintlify caps at 1,000 requests/day per IP). Dispatch it deliberately, then
+#           promote the run to baselines/ if it is worth keeping.
+
+on:
+  push:
+    branches: [main]
+    paths: &checked_paths
+      - 'devdex/**'
+      - 'benchmark/**'          # the public runner and results.json
+      - 'pyproject.toml'        # dependencies and console-script entry points
+      - 'uv.lock'
+      - '.github/workflows/devdex-eval.yml'
+  pull_request:
+    paths: *checked_paths
+  workflow_dispatch:
+    inputs:
+      track:
+        # These are devdex/scorer/suite.py's TRACKS keys, i.e. run_eval.py's --track choices.
+        # `fix` loads fix_short_v1.0.0.jsonl. The reporter reads that cell under either
+        # directory token (`fix` or the older `fixshort`), so the label needs no translation.
+        description: 'repo | docs | fix'
+        required: true
+        default: 'repo'
+      arm:
+        description: 'fc-mcp | fc-web | exa-mcp | parallel-mcp | mintlify | context7 | gh-hybrid | websearch | no-tool'
+        required: true
+        default: 'fc-mcp'
+      dataset:
+        description: 'dataset override (filename in devdex/gt/); blank uses the track default'
+        required: false
+        default: ''
+      n_runs:
+        description: 'independent passes; 1 gives no variance estimate'
+        required: false
+        default: '1'
+      limit:
+        description: 'first N items only, for a smoke run'
+        required: false
+        default: '20'
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+      - name: Dataset + scorer tests
+        # the DIRECTORY, not a hand-listed set -- a new test file must not need a CI edit to run
+        run: python -m pytest devdex/tests -q
+
+      # A wrapper with keys baked in is the single most likely way a credential reaches a PR,
+      # so fail here rather than trusting .gitignore to have caught it.
+      # Word-anchored on purpose. An unanchored `sk-[A-Za-z0-9]{20,}` matches inside scraped page
+      # content the run records legitimately contain -- a public Slack invite
+      # (.../zt-g5ortpsk-ErlnRA2rUcPIWES21oXBOg) tripped it. \b keeps the check on tokens that
+      # actually start with the prefix.
+      - name: Reject committed credentials
+        run: |
+          if git grep -nIE '\b(fc-[a-f0-9]{32}|ctx7sk-[A-Za-z0-9-]{20,}|mint_[A-Za-z0-9_]{18,}|sk-[A-Za-z0-9]{20,})' -- . ':!*.lock'; then
+            echo "::error::credential-shaped string committed"
+            exit 1
+          fi
+
+  matrix:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    # Requires a "vendor-eval" environment configured under repo Settings -> Environments with
+    # required reviewers. Without that protection rule this is a no-op label: dispatch is already
+    # gated to write-access collaborators, but this job also holds every vendor's live API key
+    # (ANTHROPIC_API_KEY plus FIRECRAWL/EXA/PARALLEL/CONTEXT7), so a second human approval before
+    # secrets are exposed is worth the extra click for a public repo.
+    environment: vendor-eval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: |
+          uv sync
+          npm install -g @anthropic-ai/claude-code
+      - name: Run cell
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+          PARALLEL_API_KEY: ${{ secrets.PARALLEL_API_KEY }}
+          CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}
+        run: |
+          uv run python devdex/run_eval.py \
+            --track "${{ inputs.track }}" \
+            --arm "${{ inputs.arm }}" \
+            --driver opus \
+            --n-runs "${{ inputs.n_runs }}" \
+            --limit "${{ inputs.limit }}" \
+            ${{ inputs.dataset && format('--dataset {0}', inputs.dataset) || '' }} \
+            --label "ci-opus-${{ inputs.track }}-${{ inputs.arm }}" \
+            --output-dir devdex/runs
+      - name: Report
+        run: uv run python devdex/scorer/report_metrics.py --runs devdex/runs --pass ci
+      - uses: actions/upload-artifact@v4
+        with:
+          name: devdex-${{ inputs.track }}-${{ inputs.arm }}
+          path: devdex/runs/
+          retention-days: 14
