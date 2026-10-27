@@ -57,17 +57,20 @@ def test_published_report_does_not_credit_a_lookalike_site(tmp_path, monkeypatch
     # Exercise the real canonical-source loader, gold probe, pool match and scorer together.
     gt = tmp_path / "gt"
     gt.mkdir()
-    (gt / report_metrics.DOCS_SCORING_GT).write_text(json.dumps({
-        "id": "docs-1", "canonical_sources": {
-            "site": "https://docs.example.com", "page_stems": ["guide"]}}) + "\n")
+    (gt / report_metrics.DOCS_SCORING_GT).write_text("".join(json.dumps({
+        "id": qid, "canonical_sources": {
+            "site": "https://docs.example.com", "page_stems": ["guide"]}}) + "\n"
+        for qid in ("docs-1", "docs-2")))
     monkeypatch.setattr(suite, "DATASETS", gt)
     monkeypatch.setattr(suite, "_DOCS_META", None)
     monkeypatch.setattr(suite, "TRACKS", dict(suite.TRACKS))
     tasks = tmp_path / "20260101T000000-p1-opus-docs-fc-mcp" / "run1" / "tasks"
     tasks.mkdir(parents=True)
-    (tasks / "p1_docs_fc-mcp.json").write_text(json.dumps([
+    records = [
         record("https://docs.example.com/guide"),
-        record("https://docs.example.com.evil.test/guide")]))
+        record("https://docs.example.com.evil.test/guide")]
+    records[1]["qid"] = "docs-2"
+    (tasks / "p1_docs_fc-mcp.json").write_text(json.dumps(records))
 
     cells, failures = report_metrics.build(str(tmp_path), "p1")
     metrics = cells["docs"]["fc-mcp"]
