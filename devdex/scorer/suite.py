@@ -193,7 +193,9 @@ def _docs_rank(row, meta, cap=CAP):
                 hit = f"{m.group(1).lower()}/{m.group(2).lower()}:{m.group(3).lower()}" in files
             if not hit and site and stems:
                 u = _strip_host(url)
-                if u.startswith(site):
+                # The declared site may include a base path. Require a segment boundary:
+                # plain startswith also admits docs.example.com.evil.test and /docs-other.
+                if u == site or u.startswith(site + "/"):
                     tail = u[len(site):].strip("/").split("?")[0].split("#")[0]
                     last = tail.split("/")[-1] if tail else ""
                     # Docs sites serve the same page under several extensions — vite.dev
