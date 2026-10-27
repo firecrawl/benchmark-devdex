@@ -347,6 +347,8 @@ def run_cell(track, arm, driver, n_runs, concurrency, out_root, label=None, limi
     # untouched default closes the same gap for the plain `run_eval.py` invocation the README
     # documents, so `report_metrics.py --pass p1` finds it with no extra flag.
     label = label or f"p1-{driver}-{track}-{arm}"
+    if label in (".", "..") or any(c in label for c in ("/", "\\", "\0")):
+        raise SystemExit("run label must be a single directory component (no slash, backslash or NUL)")
     # RESUME. Pointing at an existing run directory reuses its run<N>/tasks/ files, and the
     # harness's own _resume() then skips every qid already finished. This is what makes a
     # rate-limited vendor runnable across days: stop when the daily cap is hit, continue
@@ -356,7 +358,10 @@ def run_cell(track, arm, driver, n_runs, concurrency, out_root, label=None, limi
     # partial cell file. With it, a rerun of the same label lands in the SAME directory and
     # _resume() skips every qid already written (flushed every CHUNK=25 items).
     if auto_resume and not resume_dir:
-        prior = sorted(Path(out_root).glob(f"*-{label}"))
+        # The suffix after the timestamp is one complete label, not a glob or a suffix
+        # match: label 'example' must not inherit a run named 'team-example'.
+        prior = sorted(p for p in Path(out_root).glob("*")
+                       if p.is_dir() and p.name.partition("-")[2] == label)
         if prior:
             resume_dir = str(prior[-1])          # newest wins
 
@@ -373,7 +378,19 @@ def run_cell(track, arm, driver, n_runs, concurrency, out_root, label=None, limi
         print(f"resuming into {run_dir} ({done} cell file(s) already present)", flush=True)
     else:
         stamp = time.strftime("%Y%m%dT%H%M%S")
-        run_dir = (Path(out_root) / f"{stamp}-{label}").resolve()
+        root = Path(out_root).resolve()
+        root.mkdir(parents=True, exist_ok=True)
+        attempt = 0
+        while True:
+            # Exclusive reservation also handles two launchers racing within the same second.
+            # Padded suffixes sort after the unsuffixed timestamp and in creation order.
+            suffix = f"_{attempt:06d}" if attempt else ""
+            run_dir = root / f"{stamp}{suffix}-{label}"
+            try:
+                run_dir.mkdir()
+                break
+            except FileExistsError:
+                attempt += 1
     run_dir.mkdir(parents=True, exist_ok=True)
 
     ds = DATASET_ALIASES.get(dataset, dataset) if dataset else TRACKS[track]
