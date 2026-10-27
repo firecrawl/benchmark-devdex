@@ -29,7 +29,7 @@ Usage:
     python3 benchmark/run_benchmark.py --name yourco --report-only                # re-print scores
 """
 import argparse
-import glob
+import hashlib
 import json
 import os
 import sys
@@ -101,17 +101,34 @@ def _ci(values, rng):
 
 
 def report(engine, out=None):
-    """Read the run records back and score them with the published scorer."""
+    """Score the newest run directory per track, preserving its repeated passes.
+
+    Historical smoke runs and runs against older server versions are separate experiments;
+    pooling them changes both the estimate and its uncertainty. Directory timestamps are the
+    runner's ordering contract. A newest but empty run must not revive an older result.
+    """
     from devdex.scorer.report_metrics import score_records
     rng = np.random.default_rng(0)
-    rows, results = [], {}
+    rows, results, inputs = [], {}, {}
     for t in TRACKS:
-        files = sorted(glob.glob(str(ROOT / f"devdex/runs/*ext-{engine}-{t}/run*/tasks/*.json")))
+        runs_root = ROOT / "devdex" / "runs"
+        candidates = sorted(d for d in runs_root.glob("*")
+                            if d.is_dir() and d.name.endswith(f"-ext-{engine}-{t}"))
+        if not candidates:
+            continue
+        selected = candidates[-1]
+        files = sorted(selected.glob("run*/tasks/*.json"))
+        print(f"  {t}: reading {selected.name}")
         if not files:
             continue
         recs = []
+        hashes = {}
         for f in files:
-            recs += json.load(open(f))
+            content = f.read_bytes()
+            recs += json.loads(content)
+            hashes[str(f.relative_to(selected))] = hashlib.sha256(content).hexdigest()
+        inputs[t] = {"run": selected.name, "records": len(recs),
+                     "files": hashes}
         is_gold, pool_test = _scorer_for(t)
         m = score_records(recs, t, is_gold, pool_test)
         if not m:
@@ -160,6 +177,8 @@ def report(engine, out=None):
     payload = {"engine": engine, "mode": "agent", "depth_cap": 10,
                "dataset": "public sample (stratified ~50% of each track)",
                "scorer": "devdex.scorer.report_metrics.score_records",
+               "run_selection": "newest directory per track; all passes within that directory",
+               "inputs": inputs,
                "tracks": results}
     if out:
         Path(out).write_text(json.dumps(payload, indent=2))
