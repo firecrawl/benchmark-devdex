@@ -417,7 +417,7 @@ DOCS_SCORING_GT = os.environ.get("DOCS_SCORING_GT", "docs_public.jsonl")
 
 def check_docs_coverage(records, docs_meta, cell):
     """Every docs qid must exist in the scoring GT, else its score is a silent zero."""
-    missing = sorted({r.get("qid") for r in records} - set(docs_meta)) if docs_meta else []
+    missing = sorted({r.get("qid") for r in records} - set(docs_meta))
     if missing:
         raise SystemExit(
             f"{cell}: {len(missing)} of {len(records)} items are absent from {DOCS_SCORING_GT} "
