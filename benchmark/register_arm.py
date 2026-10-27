@@ -67,5 +67,8 @@ def run_agent_mode(engine, track="all", limit=None, n_runs=1, workers=3, dataset
         if limit:
             cmd += ["--limit", str(limit)]
         print(f"\n=== {t}: {' '.join(cmd[1:])}", flush=True)
-        rc |= subprocess.call(cmd, env=env, cwd=str(ROOT))
+        status = subprocess.call(cmd, env=env, cwd=str(ROOT))
+        if status == 78:
+            return status  # rejected resume: do not run further tracks or report old records
+        rc |= status
     return rc
