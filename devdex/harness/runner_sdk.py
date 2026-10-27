@@ -598,11 +598,8 @@ async def run_one(x):
                         is_search = (nm == "WebSearch")
                         src = "search_direct" if is_search else "reader"
                         s_ = str(getattr(b, "content", "") or "")
-                        for m in P.GH_ARTIFACT.finditer(s_):
-                            state.add(f"{m.group(1)}#{m.group(2)}", src)
-                        for m in P.GH_REPO.finditer(s_):
-                            if m.group(1).count("/") == 1:
-                                state.add(m.group(1), src)
+                        for ref in P.github_refs_from_text(s_):
+                            state.add(ref, src)
                         items, seen_u = [], set()
                         for m in P.URL_RE.finditer(s_):
                             u = m.group(0).rstrip(".,);")
