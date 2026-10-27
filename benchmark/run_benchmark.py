@@ -102,16 +102,18 @@ def _ci(values, rng):
 
 def report(engine, out=None):
     """Read the run records back and score them with the published scorer."""
-    from devdex.scorer.report_metrics import score_records
+    from devdex.scorer.report_metrics import check_pass_cohort, score_records
     rng = np.random.default_rng(0)
     rows, results = [], {}
     for t in TRACKS:
         files = sorted(glob.glob(str(ROOT / f"devdex/runs/*ext-{engine}-{t}/run*/tasks/*.json")))
         if not files:
             continue
-        recs = []
+        recs, cohort = [], None
         for f in files:
-            recs += json.load(open(f))
+            records = json.load(open(f))
+            cohort = check_pass_cohort(records, cohort, f)
+            recs += records
         is_gold, pool_test = _scorer_for(t)
         m = score_records(recs, t, is_gold, pool_test)
         if not m:
