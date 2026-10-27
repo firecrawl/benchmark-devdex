@@ -17,8 +17,9 @@ Both are pure functions of the tool name/input/response, so every decision they 
 recorded and re-derivable from the saved run.
 """
 import json, re, time
+from urllib.parse import urlsplit
 
-GH_ARTIFACT = re.compile(r"github\.com/([\w.-]+/[\w.-]+)/(?:issues|pull)/(\d+)")
+GH_ARTIFACT = re.compile(r"github\.com/([\w.-]+/[\w.-]+)/(?:issues|pull)/(\d+)(?=/|$|#|\?|\s|\))")
 GH_REPO = re.compile(r"github\.com/([\w.-]+/[\w.-]+?)(?:/|$|#|\?|\s|\))")
 URL_RE = re.compile(r"https?://[^\s\"'<>)\]]+")
 
@@ -41,13 +42,36 @@ URL_KEYS = ("url", "link", "html_url", "permalink", "source", "uri")
 
 
 def ref_from_url(url):
-    m = GH_ARTIFACT.search(url or "")
+    try:
+        parsed = urlsplit(url or "")
+        if parsed.scheme not in ("http", "https") or parsed.hostname not in ("github.com", "www.github.com"):
+            return None
+        if parsed.port not in (None, 443 if parsed.scheme == "https" else 80):
+            return None
+    except ValueError:
+        return None
+    # Parse the actual authority/path. Searching the entire string also matched lookalike
+    # hosts, external mirror paths and GitHub URLs merely embedded in a redirect parameter.
+    target = "github.com" + parsed.path
+    m = GH_ARTIFACT.match(target)
     if m:
         return f"{m.group(1)}#{m.group(2)}"
-    m = GH_REPO.search(url or "")
+    m = GH_REPO.match(target)
     if m and m.group(1).count("/") == 1:
         return m.group(1).removesuffix(".git")
     return None
+
+
+def github_refs_from_text(text):
+    """Native stream refs use the same URL-origin checks as structured MCP results."""
+    seen = set()
+    for match in URL_RE.finditer(text):
+        ref = ref_from_url(match.group(0).rstrip(".,);"))
+        if ref:
+            for item in (ref, ref.split("#")[0]):
+                if item not in seen:
+                    seen.add(item)
+                    yield item
 
 
 def _blocks(resp):
