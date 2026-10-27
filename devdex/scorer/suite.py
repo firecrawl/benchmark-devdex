@@ -393,6 +393,12 @@ def run_cell(track, arm, driver, n_runs, concurrency, out_root, label=None, limi
             argv.append(model)
         print(f"\n=== pass {i}/{n_runs}  {label}  -> {pdir}", flush=True)
         rc = subprocess.call(argv, cwd=str(HARNESS), env=env)
+        if rc == 78:
+            # runner_sdk reserves EX_CONFIG for rejected resume identity. Scoring the old
+            # file here would still publish it under this invocation's dataset/model.
+            print("cannot resume incompatible saved measurements; start a fresh run",
+                  file=sys.stderr)
+            raise SystemExit(78)
         if rc != 0:
             print(f"    pass {i} exited {rc}", flush=True)
 
@@ -457,5 +463,4 @@ def compare_to_baseline(results, baseline_path):
         out["note"] = ("baseline is single-pass — this is a raw delta, not a significance "
                        "claim. Re-run the baseline with --n-runs 3 to compare distributions.")
     return out
-
 

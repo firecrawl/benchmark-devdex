@@ -5,6 +5,7 @@ imported -- so the test extracts just the resume logic and the module-level cons
 """
 import ast
 import os
+import sys
 from pathlib import Path
 
 RUNNER = Path(__file__).resolve().parents[1] / "harness" / "runner_sdk.py"
@@ -19,7 +20,7 @@ def make_ns(out_dir, monkeypatch):
             if (isinstance(n, (ast.FunctionDef,)) and n.name in WANT)
             or (isinstance(n, ast.Assign)
                 and any(getattr(t, "id", None) in WANT for t in n.targets))]
-    ns = {"os": os, "json": __import__("json"),
+    ns = {"os": os, "sys": sys, "json": __import__("json"),
           "_out": lambda name: os.path.join(os.environ["OUT_DIR"], "tasks", name)}
     exec(compile(ast.Module(body=keep, type_ignores=[]), str(RUNNER), "exec"), ns)
     return ns
