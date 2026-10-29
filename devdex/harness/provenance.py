@@ -321,17 +321,37 @@ def vendor_error(payload):
     # Error phrases inside ranked documents describe the subject of the search, not the
     # health of the call. Keep explicit call diagnostics authoritative, including errors
     # that provide an incidental help URL or accompany partial results.
+    def diagnostic(obj, in_list=False):
+        if isinstance(obj, list):
+            return next((found for item in obj
+                         if (found := diagnostic(item, in_list=True))), None)
+        if not isinstance(obj, dict):
+            return None
+        is_result = bool(_pick(obj, URL_KEYS) or _pick(obj, REPO_KEYS))
+        if in_list and is_result:
+            return None  # a ranked result's own metadata is not a call diagnostic
+        detail = obj.get("error") or obj.get("message") or obj.get("detail")
+        if detail:
+            text = json.dumps(detail)
+            if VENDOR_ERROR.search(text):
+                return text
+        # Like _from_json, a result's object children are metadata, while its list
+        # children can be ranked results. An envelope without a URL may nest call errors.
+        for value in obj.values():
+            if isinstance(value, list) or (isinstance(value, dict) and not is_result):
+                found = diagnostic(value)
+                if found:
+                    return found
+        return None
+
     for block in _blocks(payload):
         try:
             obj = json.loads(block)
         except (ValueError, TypeError):
             continue
-        if isinstance(obj, dict):
-            diagnostic = obj.get("error") or obj.get("message") or obj.get("detail")
-            if diagnostic:
-                text = json.dumps(diagnostic)
-                if VENDOR_ERROR.search(text):
-                    return text
+        found = diagnostic(obj)
+        if found:
+            return found
     results, meta = harvest(payload)
     if (results and meta.get("structured") and not meta.get("unparsed")
             and any(r.get("text") for r in results)):

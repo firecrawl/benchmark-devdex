@@ -46,3 +46,13 @@ def test_error_metadata_belongs_to_the_ranked_result_not_the_call():
     }]}))
     assert out[0]['ref'] == 'example/project#42'
     assert not state.search_log[0].get('error')
+
+
+def test_nested_call_error_remains_authoritative_with_partial_results():
+    out, state = record(mcp({'data':{
+        'results':[{'url':'https://github.com/example/project','text':'partial'}],
+        'error':{'message':'Quota exhausted','url':'https://help.example.test/limits'}
+    }}))
+    assert out == []
+    assert state.search_log[0]['error']
+    assert not state.engine_pool
