@@ -327,13 +327,14 @@ def vendor_error(payload):
         except (ValueError, TypeError):
             continue
         if isinstance(obj, dict):
-            diagnostic = _find_key(obj, "error") or obj.get("message") or obj.get("detail")
+            diagnostic = obj.get("error") or obj.get("message") or obj.get("detail")
             if diagnostic:
                 text = json.dumps(diagnostic)
                 if VENDOR_ERROR.search(text):
                     return text
     results, meta = harvest(payload)
-    if results and meta.get("structured") and not meta.get("unparsed"):
+    if (results and meta.get("structured") and not meta.get("unparsed")
+            and any(r.get("text") for r in results)):
         return None
     try:
         t = payload if isinstance(payload, str) else json.dumps(payload)[:4000]

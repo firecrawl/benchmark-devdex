@@ -27,6 +27,7 @@ def test_ranked_issue_explaining_an_error_is_still_a_successful_search(words):
     {'content':[{'type':'text','text':'Rate limit exceeded. Please try again in547seconds.'}]},
     {'isError':True,'content':[{'type':'text','text':'Too many requests; see https://help.example.test/limits'}]},
     mcp({'message':'Quota exceeded','url':'https://help.example.test/limits'}),
+    mcp({'data':{'message':'Quota exceeded','url':'https://help.example.test/limits'}}),
     mcp({'results':[{'url':'https://github.com/example/project','text':'partial data'}],
          'error':{'message':'Quota exhausted','url':'https://help.example.test/limits'}}),
 ])
@@ -35,3 +36,13 @@ def test_real_call_refusals_remain_errors_even_with_incidental_urls(response):
     assert out == []
     assert state.search_log[0]['error']
     assert not state.engine_pool
+
+
+def test_error_metadata_belongs_to_the_ranked_result_not_the_call():
+    out, state = record(mcp({'results':[{
+        'url':'https://github.com/example/project/issues/42',
+        'title':'Retry client failures', 'text':'A valid returned issue.',
+        'metadata':{'error':'Quota exhausted'}
+    }]}))
+    assert out[0]['ref'] == 'example/project#42'
+    assert not state.search_log[0].get('error')
