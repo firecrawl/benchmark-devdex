@@ -197,15 +197,18 @@ def main():
         if a.auth:
             os.environ["DEVDEX_EXT_AUTH"] = a.auth
 
+    run_rc = 0
     if not a.report_only:
         import register_arm
         rc = register_arm.run_agent_mode(
             engine=label, track=a.track, limit=a.limit,
             n_runs=a.n_runs, workers=a.workers, datasets=DATA)
+        run_rc = rc
         if rc:
             print(f"\none or more tracks exited non-zero (rc={rc}); scoring what landed", flush=True)
 
-    return report(label, a.out)
+    report_rc = report(label, a.out)
+    return run_rc or report_rc
 
 
 if __name__ == "__main__":
