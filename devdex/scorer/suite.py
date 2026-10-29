@@ -16,6 +16,7 @@ Owns three things the harnesses deliberately do not:
 
 The harnesses remain runnable on their own; OUT_DIR is the only coupling.
 """
+import argparse
 import json
 import math
 import os
@@ -325,9 +326,20 @@ def aggregate(per_pass):
             **{k: stat([p.get(k) for p in per_pass]) for k in sorted(keys)}}
 
 
+def positive_int(value):
+    """CLI execution counts cannot be zero (unlimited) or negative (slice from the end)."""
+    number = int(value)
+    if number <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return number
+
+
 # ---------------------------------------------------------------- run
 def run_cell(track, arm, driver, n_runs, concurrency, out_root, label=None, limit=None,
              dataset=None, resume_dir=None, auto_resume=False, model_override=None):
+    for name, value in (("n_runs", n_runs), ("concurrency", concurrency), ("limit", limit)):
+        if value is not None and value <= 0:
+            raise SystemExit(f"{name} must be positive")
     if track not in TRACKS:
         raise SystemExit(f"unknown track: {track}")
     if driver not in DRIVERS:
