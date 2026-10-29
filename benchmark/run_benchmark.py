@@ -175,9 +175,9 @@ def main():
     ap.add_argument("--fetch-tool", default=None, help="your reader's tool name, if you ship one")
     ap.add_argument("--auth", default=None, help="Authorization header, e.g. 'Bearer sk-...'")
     ap.add_argument("--track", default="all", choices=("repo", "docs", "fix", "all"))
-    ap.add_argument("--n-runs", type=int, default=1)
-    ap.add_argument("--limit", type=int, help="first N items only, for a smoke run")
-    ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--n-runs", type=suite.positive_int, default=1)
+    ap.add_argument("--limit", type=suite.positive_int, help="first N items only, for a smoke run")
+    ap.add_argument("--workers", type=suite.positive_int, default=4)
     ap.add_argument("--out", default=None)
     ap.add_argument("--report-only", action="store_true",
                     help="skip running; just re-score records already on disk")
