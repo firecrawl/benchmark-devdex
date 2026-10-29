@@ -318,6 +318,23 @@ VENDOR_ERROR = re.compile(
 
 def vendor_error(payload):
     """Return the offending snippet when a 200-status payload is really a vendor refusal."""
+    # Error phrases inside ranked documents describe the subject of the search, not the
+    # health of the call. Keep explicit call diagnostics authoritative, including errors
+    # that provide an incidental help URL or accompany partial results.
+    for block in _blocks(payload):
+        try:
+            obj = json.loads(block)
+        except (ValueError, TypeError):
+            continue
+        if isinstance(obj, dict):
+            diagnostic = _find_key(obj, "error") or obj.get("message") or obj.get("detail")
+            if diagnostic:
+                text = json.dumps(diagnostic)
+                if VENDOR_ERROR.search(text):
+                    return text
+    results, meta = harvest(payload)
+    if results and meta.get("structured") and not meta.get("unparsed"):
+        return None
     try:
         t = payload if isinstance(payload, str) else json.dumps(payload)[:4000]
     except Exception:
