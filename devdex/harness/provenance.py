@@ -58,8 +58,26 @@ def _blocks(resp):
     declares an output schema — Parallel does). Walking both counted every byte twice: measured
     58,899 raw_chars and 39 blocks on a 29k single-block response, which lands straight in the
     per-arm volume comparison. Prefer `content` and ignore the duplicate."""
-    if isinstance(resp, dict) and resp.get("content") is not None and "structuredContent" in resp:
-        resp = {k: v for k, v in resp.items() if k != "structuredContent"}
+    # Preserve machine-readable payload boundaries. Flattening a direct object into scalar
+    # strings discards its URL/text association and makes valid results look unparseable.
+    if isinstance(resp, dict):
+        content = resp.get("content")
+        is_envelope = (isinstance(content, list)
+                       and all(isinstance(b, dict) and "type" in b for b in content)
+                       and not any(key in resp for key in URL_KEYS + REPO_KEYS))
+        if is_envelope:
+            if not any(isinstance(b, dict) and b.get("type") == "text"
+                       and isinstance(b.get("text"), str) and b["text"].strip()
+                       for b in content) and "structuredContent" in resp:
+                return [json.dumps(resp["structuredContent"])]
+            resp = {k: v for k, v in resp.items() if k != "structuredContent"}
+        elif "structuredContent" in resp:
+            return [json.dumps(resp["structuredContent"])]
+        elif resp.get("type") != "text":
+            return [json.dumps(resp)]
+    elif isinstance(resp, list) and all(isinstance(b, dict) for b in resp) and not any(
+            b.get("type") == "text" for b in resp):
+        return [json.dumps(resp)]
     out = []
     def walk(o):
         if isinstance(o, str):
