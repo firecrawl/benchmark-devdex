@@ -880,11 +880,29 @@ def _one_pass(items, pass_tag, pass_no):
         r["config"] = cfg
     import gzip
     rawp = _out(f"{pass_tag}_{TRACK}_{ARM_NAME}.raw.jsonl.gz")
-    with gzip.open(rawp, "wt", encoding="utf-8") as g:
+    # Completed rows loaded by _resume no longer carry _raw/_transcript: those were moved
+    # into this archive at the end of the earlier pass. Preserve them rather than replacing
+    # their audit trail with empty arrays when only the unfinished items are run again.
+    pending = {r["qid"]: r for r in rows}
+    raw_tmp = rawp + ".tmp"
+    with gzip.open(raw_tmp, "wt", encoding="utf-8") as g:
+        if os.path.exists(rawp):
+            with gzip.open(rawp, "rt", encoding="utf-8") as prior:
+                for line in prior:
+                    if not line.strip():
+                        continue
+                    entry = json.loads(line)
+                    r = pending.get(entry["qid"])
+                    if r is not None and "_raw" not in r and "_transcript" not in r:
+                        g.write(line)
+                        del pending[entry["qid"]]
         for r in rows:
+            if r["qid"] not in pending:
+                continue
             g.write(json.dumps({"qid": r["qid"], "arm": ARM_NAME, "track": TRACK, "config": cfg,
                                 "searches": r.pop("_raw", []),
                                 "transcript": r.pop("_transcript", [])}) + "\n")
+    os.replace(raw_tmp, rawp)
     json.dump(rows, open(_out(f"{pass_tag}_{TRACK}_{ARM_NAME}.json"), "w"), indent=1)
     print(f"p{pass_no} saved {len(rows)} -> {pass_tag}_{TRACK}_{ARM_NAME}.json + raw {rawp} "
           f"({os.path.getsize(rawp)/1e6:.1f} MB)", flush=True)
