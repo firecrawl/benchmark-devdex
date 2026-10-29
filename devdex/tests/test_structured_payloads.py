@@ -38,3 +38,19 @@ def test_structured_empty_is_an_honest_miss():
     assert out == []
     assert meta['shape'] == 'json'
     assert not meta['unparsed']
+
+@pytest.mark.parametrize('content', [
+    ['first paragraph', 'second paragraph'],
+    [{'text': 'first paragraph'}, {'text': 'second paragraph'}],
+    [{'type': 'text', 'text': 'first paragraph'}, {'type': 'text', 'text': 'second paragraph'}],
+])
+def test_direct_result_content_lists_remain_one_ranked_result(content):
+    response = {'url': 'https://github.com/example/project', 'content': content}
+    state = State()
+    ctl = Controller(state, Cfg(), ['search'])
+    ctl.prepare('search', {'query': 'fixture'}, 's')
+    preview = ctl.record('search', response, 's')
+    assert len(preview) == 1
+    assert preview[0]['ref'] == 'example/project'
+    assert preview[0]['content'] == 'first paragraph\nsecond paragraph'
+    assert not state.search_log[0].get('error')

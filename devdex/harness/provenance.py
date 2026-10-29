@@ -62,7 +62,10 @@ def _blocks(resp):
     # strings discards its URL/text association and makes valid results look unparseable.
     if isinstance(resp, dict):
         content = resp.get("content")
-        if isinstance(content, list):
+        is_envelope = (isinstance(content, list)
+                       and all(isinstance(b, dict) and "type" in b for b in content)
+                       and not any(key in resp for key in URL_KEYS + REPO_KEYS))
+        if is_envelope:
             if not any(isinstance(b, dict) and b.get("type") == "text"
                        and isinstance(b.get("text"), str) and b["text"].strip()
                        for b in content) and "structuredContent" in resp:
