@@ -47,12 +47,26 @@ LIST = {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
 READY = {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}}
 
 
-def _sse_or_json(body, ctype):
-    """Streamable-HTTP servers may answer a POST with SSE. Take the last data: frame."""
+def _sse_or_json(body, ctype, expected_id=None):
+    """Decode complete SSE events and select the reply, not a trailing notification."""
     if "event-stream" in (ctype or ""):
-        frames = [l[5:].strip() for l in body.splitlines() if l.startswith("data:")]
-        return json.loads(frames[-1]) if frames else {}
-    return json.loads(body or "{}")
+        messages, data = [], []
+        for line in [*body.splitlines(), ""]:
+            if not line:
+                if data:
+                    messages.append(json.loads("\n".join(data)))
+                    data = []
+            elif line == "data" or line.startswith("data:"):
+                value = line[5:] if line.startswith("data:") else ""
+                data.append(value[1:] if value.startswith(" ") else value)
+    else:
+        messages = [json.loads(body or "{}")]
+    if expected_id is None:
+        return messages[-1] if messages else {}
+    for message in messages:
+        if isinstance(message, dict) and message.get("id") == expected_id:
+            return message
+    raise ValueError(f"preflight response has no JSON-RPC reply for id {expected_id}")
 
 
 def list_http(url, headers):
@@ -61,7 +75,7 @@ def list_http(url, headers):
            "User-Agent": UA, "MCP-Protocol-Version": PROTO, **(headers or {})}
     req = urllib.request.Request(url, data=json.dumps(INIT).encode(), headers=hdr)
     with urllib.request.urlopen(req, timeout=60) as r:
-        init = _sse_or_json(r.read().decode(errors="replace"), r.headers.get("content-type"))
+        init = _sse_or_json(r.read().decode(errors="replace"), r.headers.get("content-type"), INIT["id"])
         sid = r.headers.get("mcp-session-id") or r.headers.get("Mcp-Session-Id")
     if sid:
         hdr["Mcp-Session-Id"] = sid
@@ -71,7 +85,7 @@ def list_http(url, headers):
         pass
     req = urllib.request.Request(url, data=json.dumps(LIST).encode(), headers=hdr)
     with urllib.request.urlopen(req, timeout=60) as r:
-        out = _sse_or_json(r.read().decode(errors="replace"), r.headers.get("content-type"))
+        out = _sse_or_json(r.read().decode(errors="replace"), r.headers.get("content-type"), LIST["id"])
     return (out.get("result") or {}).get("tools", []), (init.get("result") or {}).get("serverInfo", {})
 
 
