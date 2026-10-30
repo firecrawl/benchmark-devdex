@@ -218,6 +218,55 @@ DOC_TEXT_KEYS = ("markdown", "content", "text", "extract", "html", "raw", "summa
 DOC_URL_KEYS = ("url", "sourceURL", "source_url", "link", "finalUrl")
 
 
+def harvest_documents(resp):
+    """A fetch may return several pages; keep each page's own URL and body together.
+
+    Unlike search harvesting, page text can live at the root with its URL under metadata.
+    The singular harvest_document API below remains available to existing consumers.
+    """
+    blocks = _blocks(resp)
+    blob = "\n".join(blocks)
+
+    def pages(value):
+        if isinstance(value, list):
+            parts = [part for item in value if (part := pages(item)) is not None]
+            return [page for part in parts for page in part] if parts or not value else None
+        if not isinstance(value, dict):
+            return None
+        for key in ("results", "data", "documents", "pages"):
+            child = value.get(key)
+            if isinstance(child, list):
+                found = pages(child)
+                if found is not None:
+                    return found
+        meta = value.get("metadata") if isinstance(value.get("metadata"), dict) else {}
+        text = (_pick(value, DOC_TEXT_KEYS + ("excerpts", "passages"))
+                or _pick(meta, DOC_TEXT_KEYS))
+        url = _pick(value, DOC_URL_KEYS) or _pick(meta, DOC_URL_KEYS)
+        if text or url:
+            return [(url, text)]
+        for key in ("results", "data", "documents", "pages"):
+            if isinstance(value.get(key), dict):
+                found = pages(value[key])
+                if found is not None:
+                    return found
+        return None
+
+    out, structured = [], False
+    for block in blocks:
+        try:
+            value = json.loads(block)
+        except (TypeError, ValueError):
+            continue
+        # A fetched JSON file is still document content. Only recognized page shapes
+        # (including an explicit empty batch) replace the plain-body fallback.
+        documents = pages(value)
+        if documents is not None:
+            structured = True
+            out.extend(documents)
+    return out if structured else [("", blob)] if blob.strip() else []
+
+
 def harvest_document(resp):
     """A FETCH response -> (url, text). ONE document, not a ranked list.
 
