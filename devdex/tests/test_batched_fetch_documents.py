@@ -57,6 +57,18 @@ def test_bare_markdown_still_uses_the_single_requested_url():
     assert state.url_content == {URLS[0]: TEXTS[0]}
 
 
+@pytest.mark.parametrize('body', ['true', '123', '"Quoted JSON document."',
+                                  '{"name":"fixture","version":"1"}', '["first","second"]'])
+def test_plain_document_bodies_that_happen_to_be_json_are_not_discarded(body):
+    state = State()
+    ctl = Controller(state, Cfg(), ['search'], fetch_tools=['fetch'])
+    ctl.prepare_fetch('fetch', {'url': URLS[0]}, 'f')
+    ctl.record_fetch('fetch', {'content': [{'type': 'text', 'text': body}]}, 'f')
+    assert state.url_content == {URLS[0]: body}
+    assert state.fetch_log[0]['n'] == 1
+    assert state.fetch_log[0]['chars'] == len(body)
+
+
 def test_unattributed_batch_prose_is_not_attached_to_an_arbitrary_first_url():
     state = State()
     ctl = Controller(state, Cfg(), ['search'], fetch_tools=['fetch'])

@@ -229,13 +229,16 @@ def harvest_documents(resp):
 
     def pages(value):
         if isinstance(value, list):
-            return [page for item in value for page in pages(item)]
+            parts = [part for item in value if (part := pages(item)) is not None]
+            return [page for part in parts for page in part] if parts or not value else None
         if not isinstance(value, dict):
-            return []
+            return None
         for key in ("results", "data", "documents", "pages"):
             child = value.get(key)
             if isinstance(child, list):
-                return pages(child)
+                found = pages(child)
+                if found is not None:
+                    return found
         meta = value.get("metadata") if isinstance(value.get("metadata"), dict) else {}
         text = (_pick(value, DOC_TEXT_KEYS + ("excerpts", "passages"))
                 or _pick(meta, DOC_TEXT_KEYS))
@@ -244,8 +247,10 @@ def harvest_documents(resp):
             return [(url, text)]
         for key in ("results", "data", "documents", "pages"):
             if isinstance(value.get(key), dict):
-                return pages(value[key])
-        return []
+                found = pages(value[key])
+                if found is not None:
+                    return found
+        return None
 
     out, structured = [], False
     for block in blocks:
@@ -253,8 +258,12 @@ def harvest_documents(resp):
             value = json.loads(block)
         except (TypeError, ValueError):
             continue
-        structured = True
-        out.extend(pages(value))
+        # A fetched JSON file is still document content. Only recognized page shapes
+        # (including an explicit empty batch) replace the plain-body fallback.
+        documents = pages(value)
+        if documents is not None:
+            structured = True
+            out.extend(documents)
     return out if structured else [("", blob)] if blob.strip() else []
 
 
