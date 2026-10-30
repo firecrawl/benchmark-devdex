@@ -178,17 +178,24 @@ def _from_markdown(blob):
     anchors = [(i, m.group(1)) for i, l in enumerate(lines) if (m := ANCHOR.match(l))]
     if len(anchors) < 2:              # one anchor is a link in prose, not a result list
         return []
+    def header_at(index):
+        header = lines[index - 1].strip() if index > 0 else ""
+        # Only a recognizable header can consume the line before its URL. Otherwise
+        # that line is still the preceding result's body, not this result's metadata.
+        if not (HDR_TYPED.search(header) or HDR_REF.search(header) or HDR_TITLE.match(header)
+                or re.match(r"^#{1,6}\s", header)):
+            return ""
+        # Typed headers may contain markdown links; bare URL-bearing lines are body.
+        if URL_RE.search(re.sub(r"\]\([^)]*\)", "]", header)):
+            return ""
+        return header
+
     out = []
     for j, (i, url) in enumerate(anchors):
-        header = lines[i - 1].strip() if i > 0 else ""
-        # A header may legitimately CONTAIN a markdown link — Firecrawl's is
-        # `## [pull_request:owner/repo#N] (pull_request) closes [#42763](https://…)`. Testing the
-        # raw line for a URL threw that whole header away and with it the result's `type`
-        # (measured: type='' on the rank-1 hit of a live developer-search response). Strip link
-        # targets first, then test: a line that is still URL-bearing really is body text.
-        if URL_RE.search(re.sub(r"\]\([^)]*\)", "]", header)):
-            header = ""
-        end = anchors[j + 1][0] - 1 if j + 1 < len(anchors) else len(lines)
+        header = header_at(i)
+        end = anchors[j + 1][0] if j + 1 < len(anchors) else len(lines)
+        if j + 1 < len(anchors) and header_at(end):
+            end -= 1
         body = "\n".join(lines[i + 1:max(i + 1, end)]).strip().strip("-").strip()
         # Typed id first (Firecrawl), then the bare `[owner/repo#n]` form (other vendors).
         doc_id, typed = None, HDR_TYPED.search(header)
