@@ -218,6 +218,46 @@ DOC_TEXT_KEYS = ("markdown", "content", "text", "extract", "html", "raw", "summa
 DOC_URL_KEYS = ("url", "sourceURL", "source_url", "link", "finalUrl")
 
 
+def harvest_documents(resp):
+    """A fetch may return several pages; keep each page's own URL and body together.
+
+    Unlike search harvesting, page text can live at the root with its URL under metadata.
+    The singular harvest_document API below remains available to existing consumers.
+    """
+    blocks = _blocks(resp)
+    blob = "\n".join(blocks)
+
+    def pages(value):
+        if isinstance(value, list):
+            return [page for item in value for page in pages(item)]
+        if not isinstance(value, dict):
+            return []
+        for key in ("results", "data", "documents", "pages"):
+            child = value.get(key)
+            if isinstance(child, list):
+                return pages(child)
+        meta = value.get("metadata") if isinstance(value.get("metadata"), dict) else {}
+        text = (_pick(value, DOC_TEXT_KEYS + ("excerpts", "passages"))
+                or _pick(meta, DOC_TEXT_KEYS))
+        url = _pick(value, DOC_URL_KEYS) or _pick(meta, DOC_URL_KEYS)
+        if text or url:
+            return [(url, text)]
+        for key in ("results", "data", "documents", "pages"):
+            if isinstance(value.get(key), dict):
+                return pages(value[key])
+        return []
+
+    out, structured = [], False
+    for block in blocks:
+        try:
+            value = json.loads(block)
+        except (TypeError, ValueError):
+            continue
+        structured = True
+        out.extend(pages(value))
+    return out if structured else [("", blob)] if blob.strip() else []
+
+
 def harvest_document(resp):
     """A FETCH response -> (url, text). ONE document, not a ranked list.
 
