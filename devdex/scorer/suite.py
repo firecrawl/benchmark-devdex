@@ -62,7 +62,8 @@ DEAD_ERRORS = ("empty_stream", "timeout", "no_successful_search", "no_tool_calls
 # its own moved fc-web groundedness 0.450 -> 0.802. Import the definitions so a change to
 # scoring cannot land in one scorer and not the other.
 from devdex.scorer.report_metrics import (      # noqa: E402
-    CAP, cite_ref as _cite_ref, engine_slots as _engine_slots, golds as _golds, norm as _norm,
+    CAP, check_docs_coverage, cite_ref as _cite_ref, engine_slots as _engine_slots,
+    golds as _golds, norm as _norm,
 )
 
 
@@ -229,6 +230,7 @@ def score_pass(rows, track):
 
     if track == "docs":
         meta = _docs_meta()
+        check_docs_coverage(rows, meta, "docs/pass")
         clean = [r for r in rows if not meta.get(r.get("qid"), {}).get("memory_answerable")]
         has_log = any(r.get("search_log") for r in rows)
         # DETERMINISTIC docs scoring. A cited source counts when it resolves to one of the

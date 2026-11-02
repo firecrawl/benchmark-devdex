@@ -102,7 +102,7 @@ def _ci(values, rng):
 
 def report(engine, out=None):
     """Read the run records back and score them with the published scorer."""
-    from devdex.scorer.report_metrics import score_records
+    from devdex.scorer.report_metrics import check_docs_coverage, score_records
     rng = np.random.default_rng(0)
     rows, results = [], {}
     for t in TRACKS:
@@ -113,6 +113,8 @@ def report(engine, out=None):
         for f in files:
             recs += json.load(open(f))
         is_gold, pool_test = _scorer_for(t)
+        if t == "docs":
+            check_docs_coverage(recs, suite._docs_meta(), f"docs/{engine}")
         m = score_records(recs, t, is_gold, pool_test)
         if not m:
             continue
