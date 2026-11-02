@@ -69,10 +69,21 @@ def list_http(url, headers):
         urllib.request.urlopen(urllib.request.Request(url, data=json.dumps(READY).encode(), headers=hdr), timeout=30)
     except Exception:
         pass
-    req = urllib.request.Request(url, data=json.dumps(LIST).encode(), headers=hdr)
-    with urllib.request.urlopen(req, timeout=60) as r:
-        out = _sse_or_json(r.read().decode(errors="replace"), r.headers.get("content-type"))
-    return (out.get("result") or {}).get("tools", []), (init.get("result") or {}).get("serverInfo", {})
+    tools, cursors, request = [], set(), LIST
+    while True:
+        req = urllib.request.Request(url, data=json.dumps(request).encode(), headers=hdr)
+        with urllib.request.urlopen(req, timeout=60) as r:
+            out = _sse_or_json(r.read().decode(errors="replace"), r.headers.get("content-type"))
+        page = out.get("result") or {}
+        tools.extend(page.get("tools", []))
+        cursor = page.get("nextCursor")
+        if not cursor:
+            break
+        if cursor in cursors:
+            raise ValueError("tools/list repeated a pagination cursor")
+        cursors.add(cursor)
+        request = {**LIST, "params": {"cursor": cursor}}
+    return tools, (init.get("result") or {}).get("serverInfo", {})
 
 
 def list_stdio(cmd, args, env):
@@ -82,7 +93,7 @@ def list_stdio(cmd, args, env):
         for msg in (INIT, READY, LIST):
             p.stdin.write(json.dumps(msg) + "\n")
         p.stdin.flush()
-        tools, info = [], {}
+        tools, info, cursors = [], {}, set()
         for _ in range(400):                    # npx servers print banners before the handshake
             line = p.stdout.readline()
             if not line:
@@ -94,11 +105,20 @@ def list_stdio(cmd, args, env):
             if m.get("id") == 1:
                 info = (m.get("result") or {}).get("serverInfo", {})
             if m.get("id") == 2:
-                tools = (m.get("result") or {}).get("tools", [])
-                break
+                page = m.get("result") or {}
+                tools.extend(page.get("tools", []))
+                cursor = page.get("nextCursor")
+                if not cursor:
+                    break
+                if cursor in cursors:
+                    raise ValueError("tools/list repeated a pagination cursor")
+                cursors.add(cursor)
+                p.stdin.write(json.dumps({**LIST, "params": {"cursor": cursor}}) + "\n")
+                p.stdin.flush()
         return tools, info
     finally:
         p.kill()
+        p.wait()
 
 
 def main():
