@@ -340,7 +340,10 @@ class Controller:
             if r.get("ref"):
                 self.s.add(r["ref"], "reader")   # <- agent_pool. Cannot score. The whole point.
             if r.get("url"):
-                self.s.url_content.setdefault(r["url"], r.get("text") or "")
+                # A successful read supersedes the search preview used before the read.
+                # Preserve earlier evidence if the vendor supplies no document text.
+                if r.get("text"):
+                    self.s.url_content[r["url"]] = r["text"]
         # EVERY ref, not the first 10 — this is a persisted record, and a persisted record that
         # silently drops entries is the bug this design exists to remove. The list is short
         # (one fetch = one or a few documents) and it is the only trace of what the vendor's own
