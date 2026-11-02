@@ -105,6 +105,11 @@ uv run python benchmark/run_benchmark.py --name yourco --report-only --out resul
 
 Your server is mounted exactly like every arm above: same agent, same tool gate, same scorer.
 
+Reports select the newest run directory for each track under the engine's exact label. Older
+smoke tests and runs against previous server versions are not pooled; repeated passes within
+the selected directory are retained. The JSON output records the selected directories, record
+counts, and SHA-256 hashes of the scored files so a result can be traced to its inputs.
+
 **What your server needs**
 
 | | |
