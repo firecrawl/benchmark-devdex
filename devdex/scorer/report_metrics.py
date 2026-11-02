@@ -399,6 +399,28 @@ def _mean_cells(cells):
     return out
 
 
+def check_pass_cohort(records, expected, cell):
+    """Validate one row per qid and the same query set in every repeated pass.
+
+    A single smoke subset is valid. A partial or different repeat is not an independent
+    measurement of that same subset and cannot be averaged into its score.
+    """
+    seen = set()
+    for record in records:
+        qid = record.get("qid")
+        if not isinstance(qid, str) or not qid:
+            raise SystemExit(f"{cell}: every record needs a nonempty string qid")
+        if qid in seen:
+            raise SystemExit(f"{cell}: duplicate qid {qid!r} within one pass")
+        seen.add(qid)
+    if expected is not None and seen != expected:
+        raise SystemExit(
+            f"{cell}: inconsistent query cohort across repeated passes "
+            f"({len(seen)} items versus {len(expected)}); "
+            "finish the incomplete pass or report separate experiments separately")
+    return seen
+
+
 # ------------------------------------------------------------------ report
 # Docs runs may carry any docs_v3.x GT: the versions share one item set and differ only in how
 # wide canonical_sources is. Scoring them all against the widest is deliberate. What is NOT safe
@@ -466,9 +488,10 @@ def build(runs_dir, pass_label):
             files = run_files(runs_dir, pass_label, token, arm, ".json")
             if not files:
                 continue
-            per_pass = []
+            per_pass, cohort = [], None
             for f in files:
                 records = json.load(open(f))
+                cohort = check_pass_cohort(records, cohort, f)
                 if family == "docs" and records:
                     check_docs_coverage(records, docs_meta, f"{track}/{arm}")
                 one = score_records(records, family, gold_test(family), pool_test(family))
