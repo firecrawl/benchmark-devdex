@@ -20,6 +20,10 @@ Usage:
   python3 preflight.py exa-mcp       # one arm
 """
 import json, os, subprocess, sys, urllib.request
+import queue
+import signal
+import threading
+import time
 
 # Same dual import as control.py: this file is both `devdex.harness.preflight` and a documented
 # standalone script (`python3 preflight.py exa-mcp`), so it must resolve either way.
@@ -36,6 +40,7 @@ except ImportError:                      # this directory is on sys.path (script
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "tools_manifest.json")
 PROTO = "2024-11-05"
+STDIO_TIMEOUT = 60
 # Both remote MCPs sit behind Cloudflare, which 403s a request with urllib's default
 # User-Agent (error 1010, "blocked based on your browser's signature"). That failure looks
 # exactly like a bad API key, so it is worth naming: send a real UA or preflight lies to you.
@@ -77,15 +82,29 @@ def list_http(url, headers):
 
 def list_stdio(cmd, args, env):
     p = subprocess.Popen([cmd, *args], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                         stderr=subprocess.DEVNULL, text=True, env={**os.environ, **(env or {})})
+                         stderr=subprocess.DEVNULL, text=True, env={**os.environ, **(env or {})},
+                         start_new_session=(os.name == "posix"))
+    lines = queue.Queue()
+    def read_lines():
+        try:
+            for line in p.stdout:
+                lines.put(line)
+        finally:
+            lines.put(None)
+    reader = threading.Thread(target=read_lines, daemon=True)
+    reader.start()
+    deadline = time.monotonic() + STDIO_TIMEOUT
     try:
         for msg in (INIT, READY, LIST):
             p.stdin.write(json.dumps(msg) + "\n")
         p.stdin.flush()
         tools, info = [], {}
         for _ in range(400):                    # npx servers print banners before the handshake
-            line = p.stdout.readline()
-            if not line:
+            try:
+                line = lines.get(timeout=max(0, deadline - time.monotonic()))
+            except queue.Empty:
+                raise TimeoutError(f"stdio preflight exceeded {STDIO_TIMEOUT}s") from None
+            if line is None:
                 break
             try:
                 m = json.loads(line)
@@ -98,7 +117,20 @@ def list_stdio(cmd, args, env):
                 break
         return tools, info
     finally:
-        p.kill()
+        # npx-style launchers may leave a child holding stdout open. Kill the owned group
+        # on POSIX, and never let reader cleanup itself defeat the preflight deadline.
+        try:
+            if os.name == "posix":
+                os.killpg(p.pid, signal.SIGKILL)
+            else:
+                p.kill()
+        except ProcessLookupError:
+            pass
+        p.wait()
+        reader.join(timeout=1)
+        p.stdin.close()
+        if not reader.is_alive():
+            p.stdout.close()
 
 
 def main():
