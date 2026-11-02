@@ -776,7 +776,7 @@ def _is_dead(row):
     return bool(err) and any(d in err for d in _DEAD_ON_RESUME)
 
 
-def _resume(pass_tag, track, arm, items):
+def _resume(pass_tag, track, arm, items, *, gt_sha=None, model=None):
     """Load a partial cell if one exists and return (done_rows, remaining_items)."""
     path = _out(f"{pass_tag}_{track}_{arm}.json")
     if not os.path.exists(path):
@@ -790,6 +790,19 @@ def _resume(pass_tag, track, arm, items):
     else:
         keep = [r for r in done if not _is_dead(r)]
         redo = {r.get("qid") for r in done if _is_dead(r)}
+    # Qids can remain stable while their queries/golds or driver change. Reusing those
+    # measurements would mix experiments; _one_pass later stamps the current config on all
+    # rows, concealing that mismatch. Unknown legacy identity is not evidence of a match.
+    for row in keep:
+        for key, expected in (("gt_sha", gt_sha), ("model", model)):
+            if expected is not None and row.get(key) != expected:
+                print(
+                    f"cannot resume {path}: qid={row.get('qid')!r} has {key}={row.get(key)!r}, "
+                    f"expected {expected!r}. Start a fresh run with a new --label and without "
+                    "--auto-resume, or use a fresh --output-dir; saved records are unchanged.",
+                    file=sys.stderr)
+                # EX_CONFIG: the suite must not score/relabel the incompatible saved cell.
+                raise SystemExit(78)
     seen = {r.get("qid") for r in keep}
     todo = [x for x in items if x["id"] not in seen]
     if done:
@@ -830,7 +843,7 @@ def _one_pass(items, pass_tag, pass_no):
            "skill": SKILL_NAME, "skill_sha": SKILL_SHA, "skill_provenance": SKILL_PROV}
     _CFG_SNAPSHOT.update(cfg)
 
-    rows, items = _resume(pass_tag, TRACK, ARM_NAME, items)
+    rows, items = _resume(pass_tag, TRACK, ARM_NAME, items, gt_sha=GT_SHA, model=MODEL)
     if not items:
         print("nothing to do — cell already complete", flush=True)
         return rows

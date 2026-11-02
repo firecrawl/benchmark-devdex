@@ -63,7 +63,8 @@ def main():
     ap.add_argument("--resume-dir", default=None,
                     help="continue into an existing runs/<timestamp>-<label> directory instead "
                          "of creating a new one; finished qids are skipped. Use for vendors with "
-                         "a daily request cap (Mintlify: 1,000/day).")
+                         "a daily request cap (Mintlify: 1,000/day). Retained rows must record "
+                         "the same dataset hash and model; legacy unstamped rows need a fresh run.")
     ap.add_argument("--auto-resume", action="store_true",
                     help="reuse an existing runs/ dir with the same --label instead of minting a "
                          "new timestamp, so a killed run continues from its last flush. Makes a "

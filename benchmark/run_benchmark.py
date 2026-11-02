@@ -202,6 +202,8 @@ def main():
         rc = register_arm.run_agent_mode(
             engine=label, track=a.track, limit=a.limit,
             n_runs=a.n_runs, workers=a.workers, datasets=DATA)
+        if rc == 78:
+            return rc  # saved records were rejected; they must not become a new score
         if rc:
             print(f"\none or more tracks exited non-zero (rc={rc}); scoring what landed", flush=True)
 
