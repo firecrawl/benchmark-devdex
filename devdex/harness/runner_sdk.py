@@ -85,7 +85,7 @@ INTENT = {"repo": "find_repo", "fix": "find_fix", "docs": "find_docs"}[TRACK]
 # referencing one corpus rather than copying it: one corpus, two consumption paths.
 # run_eval.py always sets GT_FILE explicitly; this fallback only fires when the harness is
 # invoked directly, so it must point at what this checkout actually ships.
-GT_FILE = os.environ.get("GT_FILE", os.path.join(DATASETS, "repo_public.jsonl"))
+GT_FILE = os.environ.get("GT_FILE", os.path.join(DATASETS, f"{TRACK}_public.jsonl"))
 MODEL = os.environ.get("MODEL", "claude-opus-4-8")
 K = ARMS_MOD.K
 # How many ranked ids the agent may submit. NOT the same thing as K (search depth), even though
