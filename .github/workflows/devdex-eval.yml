@@ -59,7 +59,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install pytest anyio
       - name: Dataset + scorer tests
         # the DIRECTORY, not a hand-listed set -- a new test file must not need a CI edit to run
         run: python -m pytest devdex/tests -q
