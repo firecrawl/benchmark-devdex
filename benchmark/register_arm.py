@@ -60,7 +60,7 @@ def run_agent_mode(engine, track="all", limit=None, n_runs=1, workers=3, dataset
     for t in tracks:
         cmd = [sys.executable, "devdex/run_eval.py", "--track", t, "--arm", "external",
                "--driver", "opus", "--n-runs", str(n_runs), "--max-workers", str(workers),
-               "--skip-preflight", "--auto-resume",
+               "--auto-resume",
                "--label", f"ext-{engine}-{t}"]
         if datasets and t in datasets:
             cmd += ["--dataset", datasets[t]]
