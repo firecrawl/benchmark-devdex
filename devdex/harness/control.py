@@ -433,7 +433,7 @@ def gh_search(state, args, limit=10, search_type=None, default_kind="repo"):
     """One GitHub search -> an MCP-shaped JSON body, so it flows through the SAME
     provenance.harvest / Controller.record path as every vendor response.
 
-    type=repo  -> `gh search repos`      (name/description/topics — how you find a repository)
+    type=repo  -> GET /search/repositories (name/description/topics)
     type=issue -> GET /search/issues     (issue+PR bodies; the endpoint the GitHub arm uses)
     type=pr    -> same, filtered to PRs
     """
@@ -453,8 +453,10 @@ def gh_search(state, args, limit=10, search_type=None, default_kind="repo"):
     _gh_throttle()
     try:
         if kind == "repo":
-            cmd = ["gh", "search", "repos", q, "--limit", str(limit),
-                   "--json", "fullName,description,url,stargazersCount"]
+            # gh search reparses its positional query (and treats a leading '-' as flags).
+            # The API keeps the agent's qualifiers/quoted phrases intact, as on issue search.
+            path = f"search/repositories?q={urllib.parse.quote(q)}&per_page={limit}"
+            cmd = ["gh", "api", path]
         else:
             qq = q + (" is:pr" if kind == "pr" else "")
             path = f"search/issues?q={urllib.parse.quote(qq)}&per_page={limit}"
@@ -472,10 +474,10 @@ def gh_search(state, args, limit=10, search_type=None, default_kind="repo"):
         return f"GH SEARCH ERROR: unparseable output: {(out.stdout or '')[:200]}", True
     results = []
     if kind == "repo":
-        for r in raw:
-            results.append({"full_name": r.get("fullName"), "url": r.get("url"),
+        for r in (raw.get("items") or []):
+            results.append({"full_name": r.get("full_name"), "url": r.get("html_url"),
                             "type": "repository",
-                            "text": f"{r.get('fullName')} ({r.get('stargazersCount', 0)} stars)\n"
+                            "text": f"{r.get('full_name')} ({r.get('stargazers_count', 0)} stars)\n"
                                     f"{r.get('description') or ''}"})
     else:
         for it in (raw.get("items") or []):
