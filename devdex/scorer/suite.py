@@ -287,6 +287,7 @@ def score_pass(rows, track):
     # list's size and we cannot request k=10, those rates are not comparable to arms that
     # return 10 -- suppress rather than print a depth-2 number in a depth-10 column.
     nd = _no_depth(rows)
+    has_log = any(r.get("search_log") for r in rows)
     return {
         "n": n,
         "precision": round(precision / n, 4),
@@ -294,8 +295,10 @@ def score_pass(rows, track):
         "groundedness": round(sum(1 for r in rows
                                   if _golds(r) & set(_cites(r)) & _engine_pool(r)) / n, 4),
         "pool_hit": None if nd else round(sum(1 for r in rows if _golds(r) & _engine_pool(r)) / n, 4),
-        "engR1": None if nd or not ranks else round(sum(1 for x in ranks if x == 1) / len(ranks), 4),
-        "engMRR": None if nd or not ranks else round(sum(1 / x for x in ranks) / len(ranks), 4),
+        # Missing ranks contribute zero, just as in the docs track. Dividing by len(ranks)
+        # conditions on successful retrieval: a single rank-1 hit among 100 misses becomes 1.0.
+        "engR1": None if nd or not has_log else round(sum(1 for x in ranks if x == 1) / n, 4),
+        "engMRR": None if nd or not has_log else round(sum(1 / x for x in ranks) / n, 4),
         "no_depth": nd,
         "abstain": round(sum(1 for r in rows if not r.get("committed")) / n, 4),
         "dead_runs": round(dead / n, 4),
