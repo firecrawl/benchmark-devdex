@@ -104,6 +104,10 @@ def main():
         if cmp:
             print("\nvs baseline:", json.dumps(cmp, indent=2))
 
+    if results.get("failed_passes"):
+        # Keep the diagnostic checkpoint scores, but never tell automation the run succeeded.
+        raise SystemExit(1)
+
 
 if __name__ == "__main__":
     main()

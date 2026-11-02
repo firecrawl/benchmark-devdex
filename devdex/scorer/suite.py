@@ -382,7 +382,7 @@ def run_cell(track, arm, driver, n_runs, concurrency, out_root, label=None, limi
         raise SystemExit(f"dataset not found: {gt}")
     env = {**os.environ, "GT_FILE": str(gt), "CHUNK": os.environ.get("CHUNK", "25")}
 
-    per_pass, pass_dirs = [], []
+    per_pass, pass_dirs, failed_passes = [], [], []
     for i in range(1, n_runs + 1):
         pdir = run_dir / f"run{i}"
         pdir.mkdir(exist_ok=True)
@@ -394,6 +394,7 @@ def run_cell(track, arm, driver, n_runs, concurrency, out_root, label=None, limi
         print(f"\n=== pass {i}/{n_runs}  {label}  -> {pdir}", flush=True)
         rc = subprocess.call(argv, cwd=str(HARNESS), env=env)
         if rc != 0:
+            failed_passes.append({"pass": i, "returncode": rc})
             print(f"    pass {i} exited {rc}", flush=True)
 
         cell = pdir / "tasks" / f"p{i}_{track}_{arm}.json"
@@ -412,6 +413,7 @@ def run_cell(track, arm, driver, n_runs, concurrency, out_root, label=None, limi
         "dataset": ds,
         "n_runs": n_runs, "completed_passes": len(per_pass),
         "concurrency": concurrency,
+        "failed_passes": failed_passes,
         "started": stamp,
         "pass_dirs": pass_dirs,
         "aggregate": aggregate(per_pass) if per_pass else None,
