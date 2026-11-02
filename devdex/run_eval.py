@@ -21,7 +21,7 @@ DEVDEX_ROOT = Path(__file__).resolve().parent          # devdex/
 sys.path.insert(0, str(DEVDEX_ROOT.parent))
 
 from devdex.scorer.suite import (  # noqa: E402
-    DRIVERS, TRACKS, compare_to_baseline, run_cell,
+    DRIVERS, TRACKS, compare_to_baseline, positive_int, run_cell,
 )
 
 # Read the arm list from the registry, not a copy. A hardcoded list silently rejected
@@ -49,12 +49,12 @@ def main():
     ap.add_argument("--track", required=True, choices=sorted(TRACKS))
     ap.add_argument("--arm", required=True, choices=ARMS)
     ap.add_argument("--driver", required=True, choices=sorted(DRIVERS))
-    ap.add_argument("--n-runs", type=int, default=1,
+    ap.add_argument("--n-runs", type=positive_int, default=1,
                     help="independent passes. 3 for a reportable number; 1 gives no variance.")
-    ap.add_argument("--max-workers", type=int, default=4, help="concurrent items per pass")
+    ap.add_argument("--max-workers", type=positive_int, default=4, help="concurrent items per pass")
     ap.add_argument("--output-dir", default=str(DEVDEX_ROOT / "runs"))
     ap.add_argument("--label", default=None, help="run directory suffix")
-    ap.add_argument("--limit", type=int, default=None, help="first N items only, for smoke runs")
+    ap.add_argument("--limit", type=positive_int, default=None, help="first N items only, for smoke runs")
     ap.add_argument("--dataset", default=None,
                     help="override the track's dataset with a filename under devdex/gt/ "
                          "(each track already defaults to its own shipped set)")
