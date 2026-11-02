@@ -25,7 +25,7 @@ Claude Opus (`claude-opus-4-8`), one search tool per arm. `[ctl]` rows are contr
 
 | system | recall@10 | 95% CI | MRR@10 | 95% CI |
 |---|---|---|---|---|
-| Firecrawl Developer Index | **0.631** | [0.605, 0.657] | **0.596** | [0.571, 0.622] |
+| [Firecrawl Developer Index](https://www.firecrawl.dev/developer-index) | **0.631** | [0.605, 0.657] | **0.596** | [0.571, 0.622] |
 | Parallel | 0.577 | [0.553, 0.602] | 0.561 | [0.538, 0.585] |
 | Mintlify | 0.546 | [0.520, 0.572] | 0.538 | [0.512, 0.565] |
 | Exa | 0.537 | [0.511, 0.563] | 0.538 | [0.512, 0.564] |
