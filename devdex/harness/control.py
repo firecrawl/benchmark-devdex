@@ -322,20 +322,20 @@ class Controller:
             self.s.fetch_log.append({"tool": name, "latency": dt, "n": 0, "chars": 0,
                                      "error": errtxt})
             return None                          # None => hand the vendor's own error to the model
-        # ONE DOCUMENT — not the search parser. See provenance.harvest_document.
-        _url, _text = P.harvest_document(response)
-        if not _url:
-            # Exa's web_fetch_exa returns bare markdown with no url in it at all. We always know
-            # which url was requested — it is in the call's own arguments — so use that rather
-            # than dropping the document out of url_content, which is where a cited answer's
-            # `cited_content` (the persisted evidence for that answer) is read from.
-            _a = pend.get("args") or {}
-            _req = _a.get("url") or _a.get("urls") or _a.get("uri")
-            _url = (_req[0] if isinstance(_req, list) and _req else _req) or ""
-        results = [{"rank": 0, "url": _url, "ref": P.ref_from_url(_url),
-                    "text": _text, "type": "document"}]
-        meta = {"shape": "document", "structured": bool(_url), "blocks": 1,
-                "raw_chars": len(_text)}
+        documents = P.harvest_documents(response)
+        # A URL-less page can be attributed only when exactly one URL was requested.
+        # Assigning an unstructured batch response to its first URL invents provenance.
+        _a = pend.get("args") or {}
+        _req = _a.get("url") or _a.get("urls") or _a.get("uri")
+        if isinstance(_req, list):
+            _req = _req[0] if len(_req) == 1 else ""
+        results = []
+        for url, text in documents:
+            url = url or (_req if len(documents) == 1 else "") or ""
+            results.append({"rank": 0, "url": url, "ref": P.ref_from_url(url),
+                            "text": text, "type": "document"})
+        meta = {"shape": "document", "structured": any(r["url"] for r in results), "blocks": 1,
+                "raw_chars": sum(len(r["text"]) for r in results)}
         for r in results:
             if r.get("ref"):
                 self.s.add(r["ref"], "reader")   # <- agent_pool. Cannot score. The whole point.
